@@ -1,11 +1,14 @@
 "use client";
 
-import * as React from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Payment } from "@/shared/types";
+import { deletePayment } from "@/store/slices/paymentsSlice";
+import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
+import { RootState } from "@/store/store";
 import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -13,6 +16,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import {
   ArrowDown,
   ArrowUp,
@@ -21,18 +25,24 @@ import {
   MoreHorizontal,
   RefreshCw,
 } from "lucide-react";
-import dayjs from "dayjs";
-import { useDispatch, useSelector } from "react-redux";
-import { deletePayment } from "@/store/slices/paymentsSlice";
-import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
-import { RootState } from "@/store/store";
-import { useToast } from "@/hooks/use-toast";
+import * as React from "react";
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { PaymentInfoSheet } from "./payment-info-sheet";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -51,37 +61,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-export interface Payment {
-  id: string;
-  name: string;
-  amount: number;
-  account: string;
-  link?: string;
-  notes?: string;
-  attachments?: string[];
-  recurring: boolean;
-  frequency?: "weekly" | "monthly" | "yearly";
-  startDate: string;
-  endDate?: string;
-  paymentDate: string;
-  lastPaymentDate: string;
-  nextDueDate: string;
-  category: string;
-  tags: string[];
-}
 
 const SortableHeader = ({
   column,
@@ -390,7 +369,6 @@ export const columns: ColumnDef<Payment>[] = [
 
 export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   const dispatch = useDispatch();
-  const { toast } = useToast();
   const columnVisibility = useSelector(
     (state: RootState) => state.settings.paymentsTableColumnVisibility
   );

@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { Transaction } from "./transactions/constants";
+import { Transaction } from "@/shared/types";
 import dayjs from "dayjs";
 import {
   Area,

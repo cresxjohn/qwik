@@ -9,10 +9,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { TransactionsTable } from "./transactions-table";
-import { generateTransactions } from "./constants";
+import { mockTransactions } from "@/shared/mock";
 
 // Generate transactions once at build time
-const transactions = generateTransactions();
+const transactions = mockTransactions;
 
 export default function Page() {
   return (

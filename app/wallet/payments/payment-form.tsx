@@ -24,7 +24,8 @@ import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
-import { Payment } from "./payments-table";
+import { Payment, EndDateType, Frequency } from "@/shared/types";
+import { getFrequencyUnit, formatDate } from "@/shared/utils";
 import { toast } from "@/components/ui/use-toast";
 
 const frequencies = [
@@ -35,20 +36,10 @@ const frequencies = [
   { value: "yearly", label: "Yearly" },
 ];
 
-const getFrequencyUnit = (
-  frequency: string | undefined
-): "week" | "month" | "year" => {
-  if (frequency === "weekly" || frequency === "fortnightly") return "week";
-  if (frequency === "monthly" || frequency === "quarterly") return "month";
-  return "year";
-};
-
-type EndDateType = "forever" | "number" | "date";
-
 interface PaymentFormProps {
-  readonly onSuccess: () => void;
-  readonly onCancel: () => void;
-  readonly initialData?: Payment;
+  onSuccess: () => void;
+  onCancel: () => void;
+  initialData?: Payment;
 }
 
 interface FormData {

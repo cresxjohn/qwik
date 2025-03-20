@@ -1,48 +1,6 @@
 import { faker } from "@faker-js/faker";
-
-export type AccountType =
-  | "cash"
-  | "savings"
-  | "credit card"
-  | "line of credit"
-  | "loan"
-  | "insurance";
-
-export interface Account {
-  id: string;
-  name: string;
-  balance: number;
-  type: AccountType;
-  creditLimit: number | null;
-  onHoldAmount: number;
-  remainingCreditLimit: number | null;
-  statementDate: number | null;
-  daysDueAfterStatementDate: number | null;
-  annualFee: number | null;
-  afWaiverSpendingRequirement: number | null;
-  excludeFromBalances: boolean;
-}
-
-const ACCOUNT_TYPES: AccountType[] = [
-  "cash",
-  "savings",
-  "credit card",
-  "line of credit",
-  "loan",
-  "insurance",
-];
-
-const BANK_NAMES = [
-  "BDO",
-  "BPI",
-  "Metrobank",
-  "UnionBank",
-  "Security Bank",
-  "RCBC",
-  "EastWest",
-  "PNB",
-  "Chinabank",
-];
+import { Account, AccountType } from "../types";
+import { ACCOUNT_TYPES, BANK_NAMES } from "../constants";
 
 function generateAccountName(type: AccountType): string {
   const bank = faker.helpers.arrayElement(BANK_NAMES);
@@ -113,7 +71,7 @@ function generateAccount(): Account {
   };
 }
 
-export function generateAccounts(count = 10): Account[] {
+function generateAccounts(count = 10): Account[] {
   return Array.from({ length: count }, generateAccount).sort((a, b) => {
     // Sort by type first
     const typeOrder =
@@ -125,5 +83,4 @@ export function generateAccounts(count = 10): Account[] {
   });
 }
 
-// Generate some sample accounts
-export const accounts = generateAccounts();
+export const mockAccounts = generateAccounts();

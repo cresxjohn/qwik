@@ -11,7 +11,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { RichTable } from "@/components/rich-table";
-import { accounts, Account } from "./constants";
+import { Account } from "@/shared/types";
+import { mockAccounts } from "@/shared/mock";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -178,7 +179,7 @@ export default function Page() {
             </Button>
           </div>
           <RichTable
-            data={accounts}
+            data={mockAccounts}
             columns={columns}
             enableSelection={true}
             searchPlaceholder="Search accounts..."
