@@ -2,8 +2,13 @@ import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "./button";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
+import {
+  getAttachment,
+  isIndexedDBUrl,
+  getIdFromUrl,
+} from "@/shared/utils/indexedDB";
 
 interface ImageViewerProps {
   readonly images: string[];
@@ -30,11 +35,33 @@ export function ImageViewer({
   const [open, setOpen] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>(
+    images[initialIndex]
+  );
   const isDragging = useRef(false);
   const lastPosition = useRef<Position>({ x: 0, y: 0 });
   const dragStart = useRef<Position>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      const imageUrl = images[currentIndex];
+      if (isIndexedDBUrl(imageUrl)) {
+        const id = getIdFromUrl(imageUrl);
+        const attachment = await getAttachment(id);
+        if (attachment) {
+          const objectUrl = URL.createObjectURL(attachment.data);
+          setCurrentImageUrl(objectUrl);
+          return () => URL.revokeObjectURL(objectUrl);
+        }
+      } else {
+        setCurrentImageUrl(imageUrl);
+      }
+    };
+
+    loadImage();
+  }, [currentIndex, images]);
 
   const resetView = () => {
     setScale(ZOOM_MIN);
@@ -143,7 +170,7 @@ export function ImageViewer({
         {trigger || (
           <div className="cursor-pointer relative aspect-square">
             <Image
-              src={images[initialIndex]}
+              src={currentImageUrl}
               alt={`Image ${initialIndex + 1}`}
               fill
               className="object-cover"
@@ -156,6 +183,15 @@ export function ImageViewer({
           <DialogTitle>Image Viewer</DialogTitle>
         </VisuallyHidden>
         <div className="relative w-full h-full flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4 z-50"
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
           {images.length > 1 && (
             <>
               <Button
@@ -189,7 +225,7 @@ export function ImageViewer({
           >
             <Image
               ref={imageRef}
-              src={images[currentIndex]}
+              src={currentImageUrl}
               alt={`Image ${currentIndex + 1}`}
               fill
               className="object-contain will-change-transform"

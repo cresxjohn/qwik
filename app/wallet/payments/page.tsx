@@ -17,17 +17,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { useToast } from "@/hooks/use-toast";
 import { RootState } from "@/store/store";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Payment, PaymentsTable } from "./payments-table";
 import { PaymentForm } from "./payment-form";
+import { toast } from "sonner";
 
 export default function PaymentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | undefined>();
-  const { toast } = useToast();
   const payments = useSelector((state: RootState) => state.payments.items);
 
   const handleCreateSuccess = () => {

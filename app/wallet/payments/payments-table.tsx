@@ -1,6 +1,6 @@
 "use client";
 
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Payment } from "@/shared/types";
 import { deletePayment } from "@/store/slices/paymentsSlice";
 import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
@@ -292,7 +292,6 @@ export const columns: ColumnDef<Payment>[] = [
     enableHiding: false,
     cell: ({ row, table }) => {
       const dispatch = useDispatch();
-      const { toast } = useToast();
       const payment = row.original;
       const onEdit = (
         table.options.meta as { onEdit: (payment: Payment) => void }

@@ -18,15 +18,15 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { EndDateType, Payment } from "@/shared/types";
+import { getFrequencyUnit, storeAttachment } from "@/shared/utils";
 import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
 import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
-import { Payment, EndDateType, Frequency } from "@/shared/types";
-import { getFrequencyUnit, formatDate } from "@/shared/utils";
-import { toast } from "@/components/ui/use-toast";
 
 const frequencies = [
   { value: "weekly", label: "Weekly" },
@@ -244,15 +244,31 @@ export function PaymentForm({
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      const compressedFiles = await Promise.all(
-        newFiles.map((file) => compressImage(file))
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      setLoading(true);
+      const storedUrls = await Promise.all(
+        files.map(async (file) => {
+          const id = uuidv4();
+          return await storeAttachment(id, file);
+        })
       );
+
       setFormData((prev) => ({
         ...prev,
-        attachments: [...prev.attachments, ...compressedFiles],
+        attachments: [...prev.attachments, ...storedUrls],
       }));
+    } catch (error) {
+      console.error("Error storing attachments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to store attachments. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
