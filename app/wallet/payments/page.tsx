@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,53 +8,43 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
-import dayjs from "dayjs";
-import { PaymentsTable, Payment } from "./payments-table";
-import { mockPayments } from "./constants";
-
-const frequencies = [
-  { value: "weekly", label: "Weekly" },
-  { value: "fortnightly", label: "Fortnightly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "yearly", label: "Yearly" },
-];
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { useToast } from "@/hooks/use-toast";
+import { RootState } from "@/store/store";
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { Payment, PaymentsTable } from "./payments-table";
+import { PaymentForm } from "./payment-form";
 
 export default function PaymentsPage() {
-  const [date, setDate] = useState<Date>();
-  const [tableData, setTableData] = useState<Payment[]>([]);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | undefined>();
+  const { toast } = useToast();
+  const payments = useSelector((state: RootState) => state.payments.items);
 
-  useEffect(() => {
-    // Set the data after initial render to avoid hydration mismatch
-    setTableData(mockPayments);
-  }, []);
+  const handleCreateSuccess = () => {
+    setIsCreateOpen(false);
+    toast({
+      title: "Success",
+      description: "Payment created successfully",
+    });
+  };
+
+  const handleEditSuccess = () => {
+    setEditingPayment(undefined);
+    toast({
+      title: "Success",
+      description: "Payment updated successfully",
+    });
+  };
 
   return (
     <SidebarInset>
@@ -77,7 +66,7 @@ export default function PaymentsPage() {
         </div>
       </header>
 
-      <div className="p-6">
+      <div className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold">Payments</h1>
@@ -85,84 +74,41 @@ export default function PaymentsPage() {
               Manage your recurring payments and subscriptions
             </p>
           </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Payment
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Payment</DialogTitle>
-                <DialogDescription>
-                  Add a new payment or subscription to track
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Input
-                    id="name"
-                    placeholder="Payment name"
-                    className="col-span-4"
-                  />
-                  <Input
-                    id="amount"
-                    placeholder="Amount"
-                    type="number"
-                    className="col-span-2"
-                  />
-                  <Select>
-                    <SelectTrigger className="col-span-2">
-                      <SelectValue placeholder="Frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frequencies.map((freq) => (
-                        <SelectItem key={freq.value} value={freq.value}>
-                          {freq.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    id="account"
-                    placeholder="Account"
-                    className="col-span-2"
-                  />
-                  <Input
-                    id="link"
-                    placeholder="URL (optional)"
-                    type="url"
-                    className="col-span-2"
-                  />
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="col-span-2">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date
-                          ? dayjs(date).format("MMM D, YYYY")
-                          : "Start Date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Save Payment</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>
         </div>
 
-        <PaymentsTable data={tableData} enableSelection />
+        <PaymentsTable
+          payments={payments}
+          onEdit={(payment) => setEditingPayment(payment)}
+        />
+
+        <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <SheetContent className="overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Create Payment</SheetTitle>
+            </SheetHeader>
+            <PaymentForm
+              onSuccess={handleCreateSuccess}
+              onCancel={() => setIsCreateOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+
+        <Sheet
+          open={!!editingPayment}
+          onOpenChange={(open) => !open && setEditingPayment(undefined)}
+        >
+          <SheetContent className="overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Edit Payment</SheetTitle>
+            </SheetHeader>
+            <PaymentForm
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditingPayment(undefined)}
+              initialData={editingPayment}
+            />
+          </SheetContent>
+        </Sheet>
       </div>
     </SidebarInset>
   );

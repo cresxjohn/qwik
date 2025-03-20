@@ -22,6 +22,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import dayjs from "dayjs";
+import { useDispatch, useSelector } from "react-redux";
+import { deletePayment } from "@/store/slices/paymentsSlice";
+import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
+import { RootState } from "@/store/store";
+import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,12 +56,18 @@ export interface Payment {
   name: string;
   amount: number;
   account: string;
-  paymentDate: string;
   category: string;
   tags: string[];
   recurring: boolean;
+  frequency?: "weekly" | "fortnightly" | "monthly" | "quarterly" | "yearly";
   link?: string;
-  nextDueDate?: Date;
+  startDate: string;
+  lastPaymentDate: string;
+  nextDueDate: string;
+  paymentDate: string;
+  endDate?: string;
+  notes?: string;
+  attachments?: string[]; // Array of base64 strings
 }
 
 const SortableHeader = ({
@@ -92,8 +103,8 @@ const SortableHeader = ({
 };
 
 interface PaymentsTableProps {
-  data: Payment[];
-  enableSelection?: boolean;
+  payments: Payment[];
+  onEdit: (payment: Payment) => void;
 }
 
 const formatColumnName = (columnId: string) => {
@@ -177,6 +188,16 @@ export const columns: ColumnDef<Payment>[] = [
     },
   },
   {
+    accessorKey: "startDate",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Start Date</SortableHeader>
+    ),
+    cell: ({ row }) => {
+      const date = row.getValue("startDate") as string;
+      return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
+    },
+  },
+  {
     accessorKey: "recurring",
     header: ({ column }) => (
       <SortableHeader column={column}>Recurring</SortableHeader>
@@ -235,7 +256,7 @@ export const columns: ColumnDef<Payment>[] = [
     ),
     accessorFn: (row) => {
       const nextDueDate = row.nextDueDate;
-      if (!nextDueDate || !(nextDueDate instanceof Date)) return null;
+      if (!nextDueDate) return null;
 
       // Use start of day to ensure consistent rendering between server and client
       const today = dayjs().startOf("day");
@@ -277,36 +298,63 @@ export const columns: ColumnDef<Payment>[] = [
   {
     id: "actions",
     enableHiding: false,
-    cell: () => {
+    cell: ({ row, table }) => {
+      const dispatch = useDispatch();
+      const { toast } = useToast();
+      const payment = row.original;
+      const onEdit = (
+        table.options.meta as { onEdit: (payment: Payment) => void }
+      )?.onEdit;
+
       return (
-        <Dialog>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem>Make Transaction</DropdownMenuItem>
-              <DropdownMenuItem>Edit Payment</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600">
-                Delete Payment
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </Dialog>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Make transaction</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit?.(payment)}>
+              Edit payment
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => {
+                dispatch(deletePayment(payment.id));
+                toast({
+                  title: "Success",
+                  description: "Payment deleted successfully",
+                });
+              }}
+            >
+              Delete payment
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     },
   },
 ];
 
-export function PaymentsTable({
-  data,
-  enableSelection = false,
-}: PaymentsTableProps) {
+export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
+  const dispatch = useDispatch();
+  const { toast } = useToast();
+  const columnVisibility = useSelector(
+    (state: RootState) => state.settings.paymentsTableColumnVisibility
+  );
+
+  const handleDelete = (id: string) => {
+    dispatch(deletePayment(id));
+    toast({
+      title: "Success",
+      description: "Payment deleted successfully",
+    });
+  };
+
   const [sorting, setSorting] = React.useState<SortingState>([
     {
       id: "daysToGo",
@@ -316,46 +364,14 @@ export function PaymentsTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({
-      category: false,
-      tags: false,
-      nextDueDate: false,
-    });
   const [rowSelection, setRowSelection] = React.useState({});
 
   const allColumns = React.useMemo(() => {
-    if (!enableSelection) return columns;
-    return [
-      {
-        id: "select",
-        header: ({ table }) => (
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected()}
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
-            aria-label="Select all"
-            className="translate-y-[2px]"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-            className="translate-y-[2px]"
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
-      ...columns,
-    ];
-  }, [enableSelection]);
+    return [...columns];
+  }, []);
 
   const table = useReactTable({
-    data,
+    data: payments,
     columns: allColumns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -363,13 +379,20 @@ export function PaymentsTable({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updater) => {
+      const newVisibility =
+        typeof updater === "function" ? updater(columnVisibility) : updater;
+      dispatch(updatePaymentsTableColumnVisibility(newVisibility));
+    },
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+    },
+    meta: {
+      onEdit,
     },
   });
 
@@ -462,13 +485,7 @@ export function PaymentsTable({
         </Table>
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
-        {enableSelection && (
-          <div className="text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-        )}
-        <div className={enableSelection ? "space-x-2" : "ml-auto space-x-2"}>
+        <div className={columns.length > 0 ? "space-x-2" : "ml-auto space-x-2"}>
           <Button
             variant="outline"
             size="sm"

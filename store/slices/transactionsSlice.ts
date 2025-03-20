@@ -1,6 +1,8 @@
+import {
+  mockTransactions,
+  Transaction,
+} from "@/app/wallet/transactions/constants";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Transaction } from "@/app/wallet/transactions/constants";
-import { mockTransactions } from "@/app/wallet/transactions/constants";
 
 interface TransactionsState {
   items: Transaction[];

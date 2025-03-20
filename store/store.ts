@@ -4,16 +4,18 @@ import storage from "redux-persist/lib/storage";
 import { combineReducers } from "redux";
 import transactionsReducer from "./slices/transactionsSlice";
 import paymentsReducer from "./slices/paymentsSlice";
+import settingsReducer from "./slices/settingsSlice";
 
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["transactions", "payments"], // Only persist these reducers
+  whitelist: ["transactions", "payments", "settings"], // Only persist these reducers
 };
 
 const rootReducer = combineReducers({
   transactions: transactionsReducer,
   payments: paymentsReducer,
+  settings: settingsReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

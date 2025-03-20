@@ -35,7 +35,7 @@ export default function Page() {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col items-center gap-2">
               <a
-                href="#"
+                href="/"
                 className="flex flex-col items-center gap-2 font-medium"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-md">
