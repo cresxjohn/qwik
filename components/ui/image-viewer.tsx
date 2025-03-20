@@ -183,15 +183,6 @@ export function ImageViewer({
           <DialogTitle>Image Viewer</DialogTitle>
         </VisuallyHidden>
         <div className="relative w-full h-full flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 z-50"
-            onClick={() => setOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-
           {images.length > 1 && (
             <>
               <Button
