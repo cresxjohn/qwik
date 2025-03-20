@@ -195,6 +195,78 @@ export function PaymentForm({
     return endDate;
   };
 
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions while maintaining aspect ratio
+          const maxSize = 800; // Maximum dimension
+          if (width > height && width > maxSize) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to blob with reduced quality
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Could not create blob"));
+                return;
+              }
+              resolve(new File([blob], file.name, { type: "image/jpeg" }));
+            },
+            "image/jpeg",
+            0.7 // Quality (0.7 = 70% quality)
+          );
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      const compressedFiles = await Promise.all(
+        newFiles.map((file) => compressImage(file))
+      );
+      setFormData((prev) => ({
+        ...prev,
+        attachments: [...prev.attachments, ...compressedFiles],
+      }));
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -220,7 +292,7 @@ export function PaymentForm({
         }
       }
 
-      // Convert attachments to base64
+      // Convert attachments to base64 with size limit
       const attachmentPromises = formData.attachments.map(async (file) => {
         return new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -270,34 +342,24 @@ export function PaymentForm({
         attachments: attachments.length > 0 ? attachments : undefined,
       };
 
-      if (initialData) {
-        dispatch(updatePayment(paymentData));
-      } else {
-        dispatch(addPayment(paymentData));
+      try {
+        if (initialData) {
+          dispatch(updatePayment(paymentData));
+        } else {
+          dispatch(addPayment(paymentData));
+        }
+        onSuccess();
+      } catch (storageError) {
+        console.error("Storage error:", storageError);
+        throw new Error(
+          "Failed to save payment. The attachments might be too large. Please try reducing the image sizes."
+        );
       }
-      onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save payment");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setFormData((prev) => ({
-        ...prev,
-        attachments: [...prev.attachments, ...newFiles],
-      }));
-    }
-  };
-
-  const removeAttachment = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index),
-    }));
   };
 
   return (
@@ -540,7 +602,31 @@ export function PaymentForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Attachments (Optional)</Label>
+            <div className="flex items-center justify-between">
+              <Label>Attachments (Optional)</Label>
+              {formData.attachments.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/5"
+                  onClick={() => {
+                    // Revoke all image URLs
+                    formData.attachments.forEach((file) => {
+                      if (file.type.startsWith("image/")) {
+                        URL.revokeObjectURL(URL.createObjectURL(file));
+                      }
+                    });
+                    setFormData((prev) => ({
+                      ...prev,
+                      attachments: [],
+                    }));
+                  }}
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               {formData.attachments.map((file, index) => (
                 <div key={`${file.name}-${index}`} className="relative group">
@@ -563,7 +649,7 @@ export function PaymentForm({
                       }
                       removeAttachment(index);
                     }}
-                    className="absolute -top-2 -right-2 p-1.5 rounded-full bg-background border shadow-sm text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5 transition-all opacity-0 group-hover:opacity-100"
+                    className="absolute -top-2 -right-2 p-1.5 rounded-full bg-background border shadow-sm text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive transition-all opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
