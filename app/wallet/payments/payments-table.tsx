@@ -27,6 +27,8 @@ import { deletePayment } from "@/store/slices/paymentsSlice";
 import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
 import { RootState } from "@/store/store";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { PaymentInfoSheet } from "./payment-info-sheet";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,24 +52,35 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export interface Payment {
   id: string;
   name: string;
   amount: number;
   account: string;
-  category: string;
-  tags: string[];
-  recurring: boolean;
-  frequency?: "weekly" | "fortnightly" | "monthly" | "quarterly" | "yearly";
   link?: string;
+  notes?: string;
+  attachments?: string[];
+  recurring: boolean;
+  frequency?: "weekly" | "monthly" | "yearly";
   startDate: string;
+  endDate?: string;
+  paymentDate: string;
   lastPaymentDate: string;
   nextDueDate: string;
-  paymentDate: string;
-  endDate?: string;
-  notes?: string;
-  attachments?: string[]; // Array of base64 strings
+  category: string;
+  tags: string[];
 }
 
 const SortableHeader = ({
@@ -306,33 +319,68 @@ export const columns: ColumnDef<Payment>[] = [
         table.options.meta as { onEdit: (payment: Payment) => void }
       )?.onEdit;
 
+      const handleDelete = () => {
+        dispatch(deletePayment(payment.id));
+        toast({
+          title: "Success",
+          description: "Payment deleted successfully",
+        });
+      };
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Make transaction</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit?.(payment)}>
               Edit payment
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => {
-                dispatch(deletePayment(payment.id));
-                toast({
-                  title: "Success",
-                  description: "Payment deleted successfully",
-                });
-              }}
-            >
-              Delete payment
-            </DropdownMenuItem>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  Delete payment
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the payment "{payment.name}".
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  >
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      handleDelete();
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -346,14 +394,8 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   const columnVisibility = useSelector(
     (state: RootState) => state.settings.paymentsTableColumnVisibility
   );
-
-  const handleDelete = (id: string) => {
-    dispatch(deletePayment(id));
-    toast({
-      title: "Success",
-      description: "Payment deleted successfully",
-    });
-  };
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isInfoSheetOpen, setIsInfoSheetOpen] = useState(false);
 
   const [sorting, setSorting] = React.useState<SortingState>([
     {
@@ -460,6 +502,11 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setSelectedPayment(row.original);
+                    setIsInfoSheetOpen(true);
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-3 py-2">
@@ -504,6 +551,12 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
           </Button>
         </div>
       </div>
+
+      <PaymentInfoSheet
+        payment={selectedPayment}
+        open={isInfoSheetOpen}
+        onOpenChange={setIsInfoSheetOpen}
+      />
     </div>
   );
 }

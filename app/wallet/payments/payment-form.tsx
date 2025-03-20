@@ -20,11 +20,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
-import { CalendarIcon, ImageIcon, Loader2, Trash2 } from "lucide-react";
+import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 import { Payment } from "./payments-table";
+import { toast } from "@/components/ui/use-toast";
 
 const frequencies = [
   { value: "weekly", label: "Weekly" },
@@ -55,6 +56,8 @@ interface FormData {
   amount: string;
   frequency: string;
   account: string;
+  category: string;
+  tags: string[];
   link: string;
   startDate: Date | undefined;
   numberOfEvents: string;
@@ -147,6 +150,8 @@ export function PaymentForm({
       amount: initialData?.amount.toString() ?? "",
       frequency: initialData?.frequency ?? "",
       account: initialData?.account ?? "",
+      category: initialData?.category ?? "",
+      tags: initialData?.tags ?? [],
       link: initialData?.link ?? "",
       startDate: initialData?.startDate
         ? new Date(initialData.startDate)
@@ -274,7 +279,7 @@ export function PaymentForm({
 
     try {
       // Validate required fields
-      if (!formData.name || !formData.amount || !formData.startDate) {
+      if (!formData.name || !formData.amount || !formData.account) {
         throw new Error("Please fill in all required fields");
       }
 
@@ -309,8 +314,8 @@ export function PaymentForm({
         name: formData.name,
         amount: parseFloat(formData.amount),
         account: formData.account,
-        category: initialData?.category ?? "Subscription",
-        tags: initialData?.tags ?? [],
+        category: formData.category,
+        tags: formData.tags,
         recurring: isRecurring,
         frequency: formData.frequency as Payment["frequency"],
         link: formData.link ?? undefined,
@@ -360,6 +365,27 @@ export function PaymentForm({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && e.currentTarget.value.trim()) {
+      e.preventDefault();
+      const newTag = e.currentTarget.value.trim();
+      if (!formData.tags.includes(newTag)) {
+        setFormData((prev) => ({
+          ...prev,
+          tags: [...prev.tags, newTag],
+        }));
+      }
+      e.currentTarget.value = "";
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
   };
 
   return (
@@ -412,6 +438,23 @@ export function PaymentForm({
             />
             <p className="text-sm text-muted-foreground">
               Specify which account or payment method will be used
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              value={formData.category}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              placeholder="Enter category"
+              required
+            />
+            <p className="text-sm text-muted-foreground">
+              Categorize your payment (e.g., Entertainment, Utilities,
+              Insurance) to help with budgeting and organization
             </p>
           </div>
 
@@ -598,6 +641,38 @@ export function PaymentForm({
             />
             <p className="text-sm text-muted-foreground">
               Add any relevant information or reminders about this payment
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <div className="space-y-2">
+              <Input
+                id="tags"
+                placeholder="Type and press Enter to add tags"
+                onKeyDown={handleTagInput}
+              />
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                  >
+                    <span>{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="hover:text-primary/80"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Add custom tags to group related payments or add specific labels
+              (e.g., #urgent, #shared, #work)
             </p>
           </div>
 
