@@ -1,4 +1,9 @@
-export type Frequency = "weekly" | "monthly" | "yearly";
+export type Frequency =
+  | "weekly"
+  | "fortnightly"
+  | "monthly"
+  | "quarterly"
+  | "yearly";
 
 export interface Payment {
   id: string;

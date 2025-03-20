@@ -6,9 +6,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ImageViewer } from "@/components/ui/image-viewer";
 import dayjs from "dayjs";
 import { CalendarIcon, CreditCard, Link as LinkIcon, Tag } from "lucide-react";
-import { Payment } from "./payments-table";
+import { Payment } from "@/shared/types";
+import Image from "next/image";
 
 interface PaymentInfoSheetProps {
   payment: Payment | null;
@@ -192,16 +194,21 @@ export function PaymentInfoSheet({
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     {payment.attachments.map((attachment, index) => (
-                      <div
+                      <ImageViewer
                         key={index}
-                        className="aspect-square rounded-lg border bg-muted overflow-hidden"
-                      >
-                        <img
-                          src={attachment}
-                          alt={`Attachment ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                        images={payment.attachments || []}
+                        initialIndex={index}
+                        trigger={
+                          <div className="relative aspect-square rounded-lg border bg-muted overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
+                            <Image
+                              src={attachment}
+                              alt={`Attachment ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        }
+                      />
                     ))}
                   </div>
                 </div>
