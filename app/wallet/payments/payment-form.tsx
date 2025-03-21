@@ -27,6 +27,7 @@ import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
+import Image from "next/image";
 
 const frequencies = [
   { value: "weekly", label: "Weekly" },
@@ -129,7 +130,7 @@ export function PaymentForm({
         }
       });
     };
-  }, []);
+  }, [formData.attachments]);
 
   const calculateEndDate = () => {
     if (!formData.startDate || !formData.frequency) return undefined;
@@ -172,7 +173,7 @@ export function PaymentForm({
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image();
+        const img = document.createElement("img");
         img.onload = () => {
           const canvas = document.createElement("canvas");
           let width = img.width;
@@ -671,7 +672,7 @@ export function PaymentForm({
                   <div key={`attachment-${index}`} className="relative group">
                     <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
                       {base64String.startsWith("data:image/") ? (
-                        <img
+                        <Image
                           src={base64String}
                           alt={`Attachment ${index + 1}`}
                           className="w-full h-full object-cover"

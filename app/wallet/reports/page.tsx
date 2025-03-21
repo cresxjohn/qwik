@@ -14,23 +14,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, PieChart, BarChart } from "lucide-react";
+import { TrendingUp, Download, BarChart as BarChartIcon } from "lucide-react";
 import { RichTable } from "@/components/rich-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  BarChart as RechartsBarChart,
+  BarChart,
   Bar,
 } from "recharts";
 
@@ -101,25 +98,24 @@ const savingsData = [
 ];
 
 // Mock data for charts
-const trendData = [
-  { date: "2024-01", income: 65000, expenses: 20000, savings: 12000 },
-  { date: "2024-02", income: 68000, expenses: 21000, savings: 13000 },
-  { date: "2024-03", income: 70000, expenses: 22000, savings: 15000 },
+const trendChartData = [
+  { date: "2024-01", income: 50000, expenses: 45000 },
+  { date: "2024-02", income: 55000, expenses: 48000 },
+  { date: "2024-03", income: 60000, expenses: 52000 },
 ];
 
-const categoryData = [
-  { name: "Salary", value: 50000 },
-  { name: "Freelance", value: 15000 },
-  { name: "Investments", value: 5000 },
+const incomeChartData = [
+  { category: "Salary", amount: 60000 },
+  { category: "Freelance", amount: 20000 },
+  { category: "Investments", amount: 15000 },
 ];
 
-const expenseCategoryData = [
-  { name: "Housing", value: 15000 },
-  { name: "Food", value: 5000 },
-  { name: "Transportation", value: 2000 },
+const expenseChartData = [
+  { category: "Housing", amount: 25000 },
+  { category: "Food", amount: 15000 },
+  { category: "Transportation", amount: 8000 },
+  { category: "Entertainment", amount: 7000 },
 ];
-
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 const incomeColumns: ColumnDef<(typeof incomeData)[0]>[] = [
   {
@@ -344,23 +340,74 @@ export default function Page() {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trendData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="income" stroke="#8884d8" />
-                      <Line
+                    <AreaChart data={trendChartData}>
+                      <defs>
+                        <linearGradient
+                          id="incomeGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="hsl(var(--primary))"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="hsl(var(--primary))"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="expenseGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="hsl(var(--destructive))"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="hsl(var(--destructive))"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-muted"
+                      />
+                      <XAxis dataKey="date" className="text-muted-foreground" />
+                      <YAxis className="text-muted-foreground" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--background))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "0.5rem",
+                        }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="income"
+                        stroke="hsl(var(--primary))"
+                        fillOpacity={1}
+                        fill="url(#incomeGradient)"
+                      />
+                      <Area
                         type="monotone"
                         dataKey="expenses"
-                        stroke="#82ca9d"
+                        stroke="hsl(var(--destructive))"
+                        fillOpacity={1}
+                        fill="url(#expenseGradient)"
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="savings"
-                        stroke="#ffc658"
-                      />
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -370,30 +417,35 @@ export default function Page() {
                 <CardTitle className="text-sm font-medium">
                   Income Distribution
                 </CardTitle>
-                <PieChart className="h-4 w-4 text-muted-foreground" />
+                <BarChartIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </RechartsPieChart>
+                    <BarChart data={incomeChartData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-muted"
+                      />
+                      <XAxis
+                        dataKey="category"
+                        className="text-muted-foreground"
+                      />
+                      <YAxis className="text-muted-foreground" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--background))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "0.5rem",
+                        }}
+                        labelStyle={{ color: "hsl(var(--foreground))" }}
+                      />
+                      <Bar
+                        dataKey="amount"
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -406,18 +458,18 @@ export default function Page() {
                 <CardTitle className="text-sm font-medium">
                   Expense Categories
                 </CardTitle>
-                <BarChart className="h-4 w-4 text-muted-foreground" />
+                <BarChartIcon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RechartsBarChart data={expenseCategoryData}>
+                    <BarChart data={expenseChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
+                      <XAxis dataKey="category" />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#8884d8" />
-                    </RechartsBarChart>
+                      <Bar dataKey="amount" fill="#8884d8" />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>

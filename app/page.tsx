@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { WalletMinimal } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEventHandler, useState } from "react";
 
@@ -34,7 +35,7 @@ export default function Page() {
         <div className={cn("flex flex-col gap-6")}>
           <div className="flex flex-col gap-6">
             <div className="flex flex-col items-center gap-2">
-              <a
+              <Link
                 href="/"
                 className="flex flex-col items-center gap-2 font-medium"
               >
@@ -42,7 +43,7 @@ export default function Page() {
                   <WalletMinimal className="size-10" />
                 </div>
                 <span className="sr-only">Qwik</span>
-              </a>
+              </Link>
               <h1 className="text-xl font-bold">Welcome to Qwik</h1>
               <div className="text-center text-sm">
                 Simple yet functional expense tracker
@@ -75,7 +76,7 @@ export default function Page() {
                   )}
                 </div>
                 <Button type="submit" className="w-full">
-                  Let's go 🚀
+                  Let&apos;s go 🚀
                 </Button>
               </div>
             </form>
