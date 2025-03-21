@@ -11,11 +11,25 @@ import dayjs from "dayjs";
 import { CalendarIcon, CreditCard, Link as LinkIcon, Tag } from "lucide-react";
 import { Payment } from "@/shared/types";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface PaymentInfoSheetProps {
   payment: Payment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit: (payment: Payment) => void;
+  onDelete: (id: string) => void;
 }
 
 function getOrdinalSuffix(n: number): string {
@@ -31,17 +45,19 @@ export function PaymentInfoSheet({
   payment,
   open,
   onOpenChange,
+  onEdit,
+  onDelete,
 }: PaymentInfoSheetProps) {
   if (!payment) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
+      <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto flex flex-col">
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold">{payment.name}</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-6 space-y-8 px-4">
+        <div className="flex-1 mt-6 space-y-8 px-4 pb-24">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -214,6 +230,46 @@ export function PaymentInfoSheet({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                onEdit(payment);
+                onOpenChange(false);
+              }}
+            >
+              Edit Payment
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">Delete Payment</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the payment &quot;
+                    {payment.name}&quot;. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      onDelete(payment.id);
+                      onOpenChange(false);
+                    }}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </SheetContent>

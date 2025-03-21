@@ -539,6 +539,8 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         payment={selectedPayment}
         open={isInfoSheetOpen}
         onOpenChange={setIsInfoSheetOpen}
+        onEdit={onEdit}
+        onDelete={handleDelete}
       />
     </div>
   );
