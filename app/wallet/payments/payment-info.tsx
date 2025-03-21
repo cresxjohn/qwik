@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatCurrency } from "@/shared/utils";
 
 interface PaymentInfoProps {
   payment: Payment | null;
@@ -65,7 +66,7 @@ export function PaymentInfo({
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Amount</p>
                 <p className="text-lg font-medium">
-                  ${payment.amount.toFixed(2)}
+                  {formatCurrency(payment.amount)}
                 </p>
               </div>
               <div className="space-y-1">
@@ -85,7 +86,7 @@ export function PaymentInfo({
                 <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    Payment Method
+                    Payment Account
                   </p>
                   <p className="font-medium">
                     {payment.account || "Not specified"}
