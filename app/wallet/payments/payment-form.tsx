@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, Toaster } from "sonner";
-import { EndDateType, Payment } from "@/shared/types";
+import { EndDateType, Payment, PaymentType } from "@/shared/types";
 import { getFrequencyUnit } from "@/shared/utils";
 import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
@@ -48,6 +48,7 @@ interface FormData {
   amount: string;
   frequency: string;
   account: string;
+  toAccount: string;
   category: string;
   tags: string[];
   link: string;
@@ -68,6 +69,9 @@ export function PaymentForm({
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(
     initialData?.recurring || false
+  );
+  const [paymentType, setPaymentType] = useState<PaymentType>(
+    initialData?.paymentType || "expense"
   );
   const [endDateType, setEndDateType] = useState<EndDateType>(() => {
     if (!initialData?.endDate) return "forever";
@@ -107,12 +111,13 @@ export function PaymentForm({
       amount: initialData?.amount.toString() ?? "",
       frequency: initialData?.frequency ?? "",
       account: initialData?.account ?? "",
+      toAccount: initialData?.toAccount ?? "",
       category: initialData?.category ?? "",
       tags: initialData?.tags ?? [],
       link: initialData?.link ?? "",
       startDate: initialData?.startDate
         ? new Date(initialData.startDate)
-        : undefined,
+        : new Date(),
       numberOfEvents,
       endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
       notes: initialData?.notes ?? "",
@@ -259,6 +264,10 @@ export function PaymentForm({
         throw new Error("Please fill in all required fields");
       }
 
+      if (paymentType === "transfer" && !formData.toAccount) {
+        throw new Error("Please specify the destination account for transfer");
+      }
+
       if (isRecurring) {
         if (!formData.frequency) {
           throw new Error("Please select a frequency for recurring payments");
@@ -273,11 +282,15 @@ export function PaymentForm({
         }
       }
 
+      const amount = parseFloat(formData.amount);
       const paymentData: Payment = {
         id: initialData?.id ?? uuidv4(),
         name: formData.name,
-        amount: parseFloat(formData.amount),
+        amount:
+          paymentType === "expense" ? -Math.abs(amount) : Math.abs(amount),
         account: formData.account,
+        toAccount: paymentType === "transfer" ? formData.toAccount : undefined,
+        paymentType,
         category: formData.category,
         tags: formData.tags,
         recurring: isRecurring,
@@ -352,8 +365,26 @@ export function PaymentForm({
       <form onSubmit={handleSubmit} className="relative flex flex-col h-full">
         <div className="flex-1 space-y-6 px-4 overflow-y-auto">
           <div className="space-y-6">
+            {!initialData && (
+              <div className="space-y-2">
+                <Tabs
+                  defaultValue={paymentType}
+                  className="w-full"
+                  onValueChange={(value) =>
+                    setPaymentType(value as PaymentType)
+                  }
+                >
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="income">Income</TabsTrigger>
+                    <TabsTrigger value="expense">Expense</TabsTrigger>
+                    <TabsTrigger value="transfer">Transfer</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="name">Payment Name</Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 placeholder="e.g., Netflix Subscription, Gym Membership"
@@ -375,6 +406,7 @@ export function PaymentForm({
                 placeholder="0.00"
                 type="number"
                 step="0.01"
+                min="0"
                 value={formData.amount}
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
@@ -387,19 +419,46 @@ export function PaymentForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account">Account</Label>
+              <Label htmlFor="account">
+                {paymentType === "transfer" ? "From Account" : "Account"}
+              </Label>
               <Input
                 id="account"
-                placeholder="e.g., Credit Card, Bank Account"
+                placeholder={
+                  paymentType === "transfer"
+                    ? "Source account"
+                    : "e.g., Credit Card, Bank Account"
+                }
                 value={formData.account}
                 onChange={(e) =>
                   setFormData({ ...formData, account: e.target.value })
                 }
+                required
               />
               <p className="text-sm text-muted-foreground">
-                Specify which account or payment method will be used
+                {paymentType === "transfer"
+                  ? "Specify the source account for the transfer"
+                  : "Specify which account or payment method will be used"}
               </p>
             </div>
+
+            {paymentType === "transfer" && (
+              <div className="space-y-2">
+                <Label htmlFor="toAccount">To Account</Label>
+                <Input
+                  id="toAccount"
+                  placeholder="Destination account"
+                  value={formData.toAccount}
+                  onChange={(e) =>
+                    setFormData({ ...formData, toAccount: e.target.value })
+                  }
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  Specify the destination account for the transfer
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
@@ -474,14 +533,15 @@ export function PaymentForm({
                   <TabsTrigger value="recurring">Recurring Payment</TabsTrigger>
                 </TabsList>
                 <TabsContent value="recurring" className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
+                  <div className="space-y-6">
+                    <div className="space-y-2 mt-4">
                       <Label htmlFor="frequency">Frequency</Label>
                       <Select
                         value={formData.frequency}
                         onValueChange={(value) =>
                           setFormData({ ...formData, frequency: value })
                         }
+                        required
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select frequency" />
@@ -530,6 +590,7 @@ export function PaymentForm({
                                 numberOfEvents: e.target.value,
                               })
                             }
+                            required
                           />
                           <p className="text-sm text-muted-foreground">
                             How many times should this payment occur? The end
@@ -563,6 +624,7 @@ export function PaymentForm({
                                   setFormData({ ...formData, endDate: date })
                                 }
                                 initialFocus
+                                required
                               />
                             </PopoverContent>
                           </Popover>
@@ -610,7 +672,7 @@ export function PaymentForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
+              <Label htmlFor="tags">Tags (Optional)</Label>
               <div className="space-y-2">
                 <Input
                   id="tags"

@@ -65,7 +65,7 @@ export default function PaymentsPage() {
           <div>
             <h1 className="text-2xl font-bold">Payments</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your recurring payments and subscriptions
+              Manage your one-time and recurring payments and subscriptions
             </p>
           </div>
           <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>

@@ -5,11 +5,15 @@ export type Frequency =
   | "quarterly"
   | "yearly";
 
+export type PaymentType = "income" | "expense" | "transfer";
+
 export interface Payment {
   id: string;
   name: string;
   amount: number;
   account: string;
+  toAccount?: string; // For transfer payments
+  paymentType: PaymentType;
   link?: string;
   notes?: string;
   attachments?: string[];
@@ -25,8 +29,3 @@ export interface Payment {
 }
 
 export type EndDateType = "forever" | "number" | "date";
-
-export interface PaymentType {
-  name: string;
-  value: number;
-}
