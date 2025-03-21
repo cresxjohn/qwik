@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface PaymentInfoSheetProps {
+interface PaymentInfoProps {
   payment: Payment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,18 +41,18 @@ function getOrdinalSuffix(n: number): string {
   return "th";
 }
 
-export function PaymentInfoSheet({
+export function PaymentInfo({
   payment,
   open,
   onOpenChange,
   onEdit,
   onDelete,
-}: PaymentInfoSheetProps) {
+}: PaymentInfoProps) {
   if (!payment) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto flex flex-col">
+      <SheetContent className="w-[480px] sm:max-w-[480px] overflow-y-auto flex flex-col">
         <SheetHeader>
           <SheetTitle className="text-2xl font-bold">{payment.name}</SheetTitle>
         </SheetHeader>

@@ -77,7 +77,7 @@ export default function PaymentsPage() {
         />
 
         <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <SheetContent className="overflow-y-auto">
+          <SheetContent className="w-[420px] sm:max-w-[420px] overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Create Payment</SheetTitle>
             </SheetHeader>
@@ -92,7 +92,7 @@ export default function PaymentsPage() {
           open={!!editingPayment}
           onOpenChange={(open) => !open && setEditingPayment(undefined)}
         >
-          <SheetContent className="overflow-y-auto">
+          <SheetContent className="w-[420px] sm:max-w-[420px] overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Edit Payment</SheetTitle>
             </SheetHeader>

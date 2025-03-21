@@ -29,7 +29,7 @@ import {
 import * as React from "react";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { PaymentInfoSheet } from "./payment-info-sheet";
+import { PaymentInfo } from "./payment-info";
 
 import {
   AlertDialog,
@@ -535,7 +535,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         </div>
       </div>
 
-      <PaymentInfoSheet
+      <PaymentInfo
         payment={selectedPayment}
         open={isInfoSheetOpen}
         onOpenChange={setIsInfoSheetOpen}
