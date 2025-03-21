@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import { EndDateType, Payment } from "@/shared/types";
-import { getFrequencyUnit, storeAttachment } from "@/shared/utils";
+import { getFrequencyUnit } from "@/shared/utils";
 import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
 import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 
@@ -54,7 +54,7 @@ interface FormData {
   numberOfEvents: string;
   endDate: Date | undefined;
   notes: string;
-  attachments: File[];
+  attachments: string[]; // Store base64 strings
 }
 
 export function PaymentForm({
@@ -101,41 +101,6 @@ export function PaymentForm({
       }
     }
 
-    // Convert base64 attachments to File objects
-    const attachments: File[] = [];
-    if (initialData?.attachments) {
-      initialData.attachments.forEach((base64String, index) => {
-        // Extract the base64 data and mime type
-        const matches = base64String.match(
-          /^data:([A-Za-z-+\/]+);base64,(.+)$/
-        );
-        if (matches) {
-          const mimeType = matches[1];
-          const base64Data = matches[2];
-          // Convert base64 to blob
-          const byteCharacters = atob(base64Data);
-          const byteArrays = [];
-          for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-            const slice = byteCharacters.slice(offset, offset + 1024);
-            const byteNumbers = new Array(slice.length);
-            for (let i = 0; i < slice.length; i++) {
-              byteNumbers[i] = slice.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            byteArrays.push(byteArray);
-          }
-          const blob = new Blob(byteArrays, { type: mimeType });
-          attachments.push(
-            new File(
-              [blob],
-              `attachment-${index + 1}.${mimeType.split("/")[1]}`,
-              { type: mimeType }
-            )
-          );
-        }
-      });
-    }
-
     return {
       name: initialData?.name ?? "",
       amount: initialData?.amount.toString() ?? "",
@@ -150,9 +115,21 @@ export function PaymentForm({
       numberOfEvents,
       endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
       notes: initialData?.notes ?? "",
-      attachments,
+      attachments: initialData?.attachments || [],
     };
   });
+
+  // Clean up attachments when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up any object URLs when component unmounts
+      formData.attachments.forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, []);
 
   const calculateEndDate = () => {
     if (!formData.startDate || !formData.frequency) return undefined;
@@ -191,7 +168,7 @@ export function PaymentForm({
     return endDate;
   };
 
-  const compressImage = async (file: File): Promise<File> => {
+  const compressImage = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -222,18 +199,9 @@ export function PaymentForm({
 
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert to blob with reduced quality
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error("Could not create blob"));
-                return;
-              }
-              resolve(new File([blob], file.name, { type: "image/jpeg" }));
-            },
-            "image/jpeg",
-            0.7 // Quality (0.7 = 70% quality)
-          );
+          // Convert to base64 with reduced quality
+          const base64String = canvas.toDataURL("image/jpeg", 0.7); // 0.7 = 70% quality
+          resolve(base64String);
         };
         img.onerror = reject;
         img.src = e.target?.result as string;
@@ -249,24 +217,24 @@ export function PaymentForm({
 
     try {
       setLoading(true);
-      const storedUrls = await Promise.all(
+      const compressedImages = await Promise.all(
         files.map(async (file) => {
-          const id = uuidv4();
-          return await storeAttachment(id, file);
+          try {
+            return await compressImage(file);
+          } catch (error) {
+            console.error("Error compressing file:", error);
+            throw error;
+          }
         })
       );
 
       setFormData((prev) => ({
         ...prev,
-        attachments: [...prev.attachments, ...storedUrls],
+        attachments: [...prev.attachments, ...compressedImages],
       }));
     } catch (error) {
-      console.error("Error storing attachments:", error);
-      toast({
-        title: "Error",
-        description: "Failed to store attachments. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Error processing attachments:", error);
+      toast.error("Failed to process attachments. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -304,18 +272,6 @@ export function PaymentForm({
         }
       }
 
-      // Convert attachments to base64 with size limit
-      const attachmentPromises = formData.attachments.map(async (file) => {
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      });
-
-      const attachments = await Promise.all(attachmentPromises);
-
       const paymentData: Payment = {
         id: initialData?.id ?? uuidv4(),
         name: formData.name,
@@ -351,23 +307,18 @@ export function PaymentForm({
             })()
           : undefined,
         notes: formData.notes || undefined,
-        attachments: attachments.length > 0 ? attachments : undefined,
+        attachments:
+          formData.attachments.length > 0 ? formData.attachments : undefined,
       };
 
-      try {
-        if (initialData) {
-          dispatch(updatePayment(paymentData));
-        } else {
-          dispatch(addPayment(paymentData));
-        }
-        onSuccess();
-      } catch (storageError) {
-        console.error("Storage error:", storageError);
-        throw new Error(
-          "Failed to save payment. The attachments might be too large. Please try reducing the image sizes."
-        );
+      if (initialData) {
+        dispatch(updatePayment(paymentData));
+      } else {
+        dispatch(addPayment(paymentData));
       }
+      onSuccess();
     } catch (err) {
+      console.error("Error saving payment:", err);
       setError(err instanceof Error ? err.message : "Failed to save payment");
     } finally {
       setLoading(false);
@@ -396,379 +347,397 @@ export function PaymentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative flex flex-col h-full">
-      <div className="flex-1 space-y-6 px-4 overflow-y-auto">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name">Payment Name</Label>
-            <Input
-              id="name"
-              placeholder="e.g., Netflix Subscription, Gym Membership"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              Give your payment a descriptive name to easily identify it
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input
-              id="amount"
-              placeholder="0.00"
-              type="number"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) =>
-                setFormData({ ...formData, amount: e.target.value })
-              }
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              Enter the payment amount in your local currency
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="account">Account</Label>
-            <Input
-              id="account"
-              placeholder="e.g., Credit Card, Bank Account"
-              value={formData.account}
-              onChange={(e) =>
-                setFormData({ ...formData, account: e.target.value })
-              }
-            />
-            <p className="text-sm text-muted-foreground">
-              Specify which account or payment method will be used
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Input
-              id="category"
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              placeholder="Enter category"
-              required
-            />
-            <p className="text-sm text-muted-foreground">
-              Categorize your payment (e.g., Entertainment, Utilities,
-              Insurance) to help with budgeting and organization
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.startDate ? (
-                    dayjs(formData.startDate).format("MMM D, YYYY")
-                  ) : (
-                    <span>Select a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.startDate}
-                  onSelect={(date) =>
-                    setFormData({ ...formData, startDate: date })
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            <p className="text-sm text-muted-foreground">
-              When does this payment start? For recurring payments, this will be
-              your first payment date
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <Label>Payment Type</Label>
-            <Tabs
-              defaultValue={initialData?.recurring ? "recurring" : "one-time"}
-              className="w-full"
-              onValueChange={(value) => {
-                setIsRecurring(value === "recurring");
-                if (value === "one-time") {
-                  setFormData({
-                    ...formData,
-                    frequency: "",
-                    numberOfEvents: "",
-                    endDate: undefined,
-                  });
-                  setEndDateType("forever");
-                }
-              }}
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="one-time">One-time Payment</TabsTrigger>
-                <TabsTrigger value="recurring">Recurring Payment</TabsTrigger>
-              </TabsList>
-              <TabsContent value="recurring" className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="frequency">Frequency</Label>
-                    <Select
-                      value={formData.frequency}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, frequency: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {frequencies.map((freq) => (
-                          <SelectItem key={freq.value} value={freq.value}>
-                            {freq.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground">
-                      How often will this payment occur?
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label>End Date Options</Label>
-                    <Tabs
-                      defaultValue={endDateType}
-                      className="w-full"
-                      onValueChange={(value) =>
-                        setEndDateType(value as EndDateType)
-                      }
-                    >
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="forever">Forever</TabsTrigger>
-                        <TabsTrigger value="number">
-                          Number of Events
-                        </TabsTrigger>
-                        <TabsTrigger value="date">Specific Date</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="number" className="space-y-2">
-                        <Label htmlFor="numberOfEvents">Number of Events</Label>
-                        <Input
-                          id="numberOfEvents"
-                          type="number"
-                          placeholder="e.g., 12 for monthly payments for a year"
-                          value={formData.numberOfEvents}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              numberOfEvents: e.target.value,
-                            })
-                          }
-                        />
-                        <p className="text-sm text-muted-foreground">
-                          How many times should this payment occur? The end date
-                          will be calculated automatically
-                        </p>
-                      </TabsContent>
-                      <TabsContent value="date" className="space-y-2">
-                        <Label>End Date</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-start text-left font-normal"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {formData.endDate ? (
-                                dayjs(formData.endDate).format("MMM D, YYYY")
-                              ) : (
-                                <span>Select end date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={formData.endDate}
-                              onSelect={(date) =>
-                                setFormData({ ...formData, endDate: date })
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <p className="text-sm text-muted-foreground">
-                          When should this recurring payment end?
-                        </p>
-                      </TabsContent>
-                    </Tabs>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="link">URL (Optional)</Label>
-            <Input
-              id="link"
-              placeholder="https://"
-              type="url"
-              value={formData.link}
-              onChange={(e) =>
-                setFormData({ ...formData, link: e.target.value })
-              }
-            />
-            <p className="text-sm text-muted-foreground">
-              Add a link to the payment website or portal for quick access
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="Add any additional notes about this payment..."
-              value={formData.notes}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              className="min-h-[100px]"
-            />
-            <p className="text-sm text-muted-foreground">
-              Add any relevant information or reminders about this payment
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags</Label>
+    <>
+      <form onSubmit={handleSubmit} className="relative flex flex-col h-full">
+        <div className="flex-1 space-y-6 px-4 overflow-y-auto">
+          <div className="space-y-6">
             <div className="space-y-2">
+              <Label htmlFor="name">Payment Name</Label>
               <Input
-                id="tags"
-                placeholder="Type and press Enter to add tags"
-                onKeyDown={handleTagInput}
+                id="name"
+                placeholder="e.g., Netflix Subscription, Gym Membership"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                required
               />
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag) => (
-                  <div
-                    key={tag}
-                    className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-sm"
+              <p className="text-sm text-muted-foreground">
+                Give your payment a descriptive name to easily identify it
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                placeholder="0.00"
+                type="number"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: e.target.value })
+                }
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the payment amount in your local currency
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="account">Account</Label>
+              <Input
+                id="account"
+                placeholder="e.g., Credit Card, Bank Account"
+                value={formData.account}
+                onChange={(e) =>
+                  setFormData({ ...formData, account: e.target.value })
+                }
+              />
+              <p className="text-sm text-muted-foreground">
+                Specify which account or payment method will be used
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                placeholder="Enter category"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Categorize your payment (e.g., Entertainment, Utilities,
+                Insurance) to help with budgeting and organization
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
                   >
-                    <span>{tag}</span>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.startDate ? (
+                      dayjs(formData.startDate).format("MMM D, YYYY")
+                    ) : (
+                      <span>Select a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.startDate}
+                    onSelect={(date) =>
+                      setFormData({ ...formData, startDate: date })
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-sm text-muted-foreground">
+                When does this payment start? For recurring payments, this will
+                be your first payment date
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Label>Payment Type</Label>
+              <Tabs
+                defaultValue={initialData?.recurring ? "recurring" : "one-time"}
+                className="w-full"
+                onValueChange={(value) => {
+                  setIsRecurring(value === "recurring");
+                  if (value === "one-time") {
+                    setFormData({
+                      ...formData,
+                      frequency: "",
+                      numberOfEvents: "",
+                      endDate: undefined,
+                    });
+                    setEndDateType("forever");
+                  }
+                }}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="one-time">One-time Payment</TabsTrigger>
+                  <TabsTrigger value="recurring">Recurring Payment</TabsTrigger>
+                </TabsList>
+                <TabsContent value="recurring" className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency">Frequency</Label>
+                      <Select
+                        value={formData.frequency}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, frequency: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {frequencies.map((freq) => (
+                            <SelectItem key={freq.value} value={freq.value}>
+                              {freq.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">
+                        How often will this payment occur?
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>End Date Options</Label>
+                      <Tabs
+                        defaultValue={endDateType}
+                        className="w-full"
+                        onValueChange={(value) =>
+                          setEndDateType(value as EndDateType)
+                        }
+                      >
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="forever">Forever</TabsTrigger>
+                          <TabsTrigger value="number">
+                            Number of Events
+                          </TabsTrigger>
+                          <TabsTrigger value="date">Specific Date</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="number" className="space-y-2">
+                          <Label htmlFor="numberOfEvents">
+                            Number of Events
+                          </Label>
+                          <Input
+                            id="numberOfEvents"
+                            type="number"
+                            placeholder="e.g., 12 for monthly payments for a year"
+                            value={formData.numberOfEvents}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                numberOfEvents: e.target.value,
+                              })
+                            }
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            How many times should this payment occur? The end
+                            date will be calculated automatically
+                          </p>
+                        </TabsContent>
+                        <TabsContent value="date" className="space-y-2">
+                          <Label>End Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formData.endDate ? (
+                                  dayjs(formData.endDate).format("MMM D, YYYY")
+                                ) : (
+                                  <span>Select end date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={formData.endDate}
+                                onSelect={(date) =>
+                                  setFormData({ ...formData, endDate: date })
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <p className="text-sm text-muted-foreground">
+                            When should this recurring payment end?
+                          </p>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="link">URL (Optional)</Label>
+              <Input
+                id="link"
+                placeholder="https://"
+                type="url"
+                value={formData.link}
+                onChange={(e) =>
+                  setFormData({ ...formData, link: e.target.value })
+                }
+              />
+              <p className="text-sm text-muted-foreground">
+                Add a link to the payment website or portal for quick access
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Add any additional notes about this payment..."
+                value={formData.notes}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                className="min-h-[100px]"
+              />
+              <p className="text-sm text-muted-foreground">
+                Add any relevant information or reminders about this payment
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <div className="space-y-2">
+                <Input
+                  id="tags"
+                  placeholder="Type and press Enter to add tags"
+                  onKeyDown={handleTagInput}
+                />
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag) => (
+                    <div
+                      key={tag}
+                      className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:text-primary/80"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Add custom tags to group related payments or add specific labels
+                (e.g., #urgent, #shared, #work)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Attachments (Optional)</Label>
+                {formData.attachments.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/5"
+                    onClick={() => {
+                      // Revoke all image URLs
+                      formData.attachments.forEach((url) => {
+                        if (url.startsWith("blob:")) {
+                          URL.revokeObjectURL(url);
+                        }
+                      });
+                      setFormData((prev) => ({
+                        ...prev,
+                        attachments: [],
+                      }));
+                    }}
+                  >
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {formData.attachments.map((base64String, index) => (
+                  <div key={`attachment-${index}`} className="relative group">
+                    <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
+                      {base64String.startsWith("data:image/") ? (
+                        <img
+                          src={base64String}
+                          alt={`Attachment ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={() => {
+                            toast.error(
+                              `Failed to load attachment ${index + 1}`
+                            );
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-4">
+                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground mt-2">
+                            {`Attachment ${index + 1}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-primary/80"
+                      onClick={() => removeAttachment(index)}
+                      className="absolute -top-2 -right-2 p-1.5 rounded-full bg-background border shadow-sm text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive transition-all opacity-0 group-hover:opacity-100"
                     >
-                      <X className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
+                <label className="aspect-square rounded-lg border border-dashed flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={loading}
+                  />
+                  {loading ? (
+                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  )}
+                </label>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Add photos of receipts, invoices, or other relevant documents
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Add custom tags to group related payments or add specific labels
-              (e.g., #urgent, #shared, #work)
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Attachments (Optional)</Label>
-              {formData.attachments.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/5"
-                  onClick={() => {
-                    // Revoke all image URLs
-                    formData.attachments.forEach((file) => {
-                      if (file.type.startsWith("image/")) {
-                        URL.revokeObjectURL(URL.createObjectURL(file));
-                      }
-                    });
-                    setFormData((prev) => ({
-                      ...prev,
-                      attachments: [],
-                    }));
-                  }}
-                >
-                  Clear All
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {formData.attachments.map((file, index) => (
-                <div key={`${file.name}-${index}`} className="relative group">
-                  <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-                    {file.type.startsWith("image/") ? (
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Attachment ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (file.type.startsWith("image/")) {
-                        URL.revokeObjectURL(URL.createObjectURL(file));
-                      }
-                      removeAttachment(index);
-                    }}
-                    className="absolute -top-2 -right-2 p-1.5 rounded-full bg-background border shadow-sm text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive transition-all opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              <label className="aspect-square rounded-lg border border-dashed flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <ImageIcon className="h-8 w-8 text-muted-foreground" />
-              </label>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Add photos of receipts, invoices, or other relevant documents
-            </p>
           </div>
         </div>
-      </div>
 
-      <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 mt-4">
-        {error && (
-          <div className="text-sm text-red-500 text-center mb-4">{error}</div>
-        )}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? "Update Payment" : "Create Payment"}
-          </Button>
+        <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 mt-4">
+          {error && (
+            <div className="text-sm text-red-500 text-center mb-4">{error}</div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {initialData ? "Update Payment" : "Create Payment"}
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+      <Toaster />
+    </>
   );
 }

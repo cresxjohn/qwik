@@ -20,9 +20,10 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { RootState } from "@/store/store";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { Payment, PaymentsTable } from "./payments-table";
-import { PaymentForm } from "./payment-form";
 import { toast } from "sonner";
+import { PaymentForm } from "./payment-form";
+import { PaymentsTable } from "./payments-table";
+import { Payment } from "@/shared/types";
 
 export default function PaymentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -31,18 +32,12 @@ export default function PaymentsPage() {
 
   const handleCreateSuccess = () => {
     setIsCreateOpen(false);
-    toast({
-      title: "Success",
-      description: "Payment created successfully",
-    });
+    toast.success("Payment created successfully");
   };
 
   const handleEditSuccess = () => {
     setEditingPayment(undefined);
-    toast({
-      title: "Success",
-      description: "Payment updated successfully",
-    });
+    toast.success("Payment updated successfully");
   };
 
   return (

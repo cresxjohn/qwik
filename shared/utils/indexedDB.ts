@@ -76,8 +76,8 @@ export const deleteAttachment = async (id: string): Promise<void> => {
   });
 };
 
-export const isIndexedDBUrl = (url: string): boolean => {
-  return url.startsWith("indexeddb://");
+export const isIndexedDBUrl = (url: string | undefined | null): boolean => {
+  return url ? url.startsWith("indexeddb://") : false;
 };
 
 export const getIdFromUrl = (url: string): string => {

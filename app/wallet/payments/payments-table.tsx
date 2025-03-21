@@ -9,6 +9,7 @@ import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
+  type Table as TableInstance,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -113,6 +114,76 @@ const formatColumnName = (columnId: string) => {
         .replace(/([A-Z])/g, " $1")
         .replace(/^./, (str) => str.toUpperCase());
   }
+};
+
+interface ActionCellProps {
+  row: { original: Payment };
+  table: TableInstance<Payment>;
+  onDelete: (id: string) => void;
+}
+
+const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
+  const payment = row.original;
+  const onEdit = (table.options.meta as { onEdit?: (payment: Payment) => void })
+    ?.onEdit;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="h-8 w-8 p-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>Make transaction</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onEdit?.(payment)}>
+          Edit payment
+        </DropdownMenuItem>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem
+              className="text-red-600"
+              onSelect={(e) => e.preventDefault()}
+            >
+              Delete payment
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the payment &quot;{payment.name}
+                &quot;. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onDelete(payment.id);
+                }}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 };
 
 export const columns: ColumnDef<Payment>[] = [
@@ -275,7 +346,7 @@ export const columns: ColumnDef<Payment>[] = [
       <SortableHeader column={column}>Tags</SortableHeader>
     ),
     cell: ({ row }) => {
-      const tags = row.getValue("tags") as string[];
+      const tags: string[] = row.getValue("tags");
       return (
         <div className="flex flex-wrap gap-1">
           {tags.map((tag) => (
@@ -291,77 +362,8 @@ export const columns: ColumnDef<Payment>[] = [
     id: "actions",
     enableHiding: false,
     cell: ({ row, table }) => {
-      const dispatch = useDispatch();
-      const payment = row.original;
-      const onEdit = (
-        table.options.meta as { onEdit: (payment: Payment) => void }
-      )?.onEdit;
-
-      const handleDelete = () => {
-        dispatch(deletePayment(payment.id));
-        toast({
-          title: "Success",
-          description: "Payment deleted successfully",
-        });
-      };
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Make transaction</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit?.(payment)}>
-              Edit payment
-            </DropdownMenuItem>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  Delete payment
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the payment "{payment.name}".
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                  >
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation();
-                      handleDelete();
-                    }}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
+      const meta = table.options.meta as { onDelete: (id: string) => void };
+      return <ActionCell row={row} table={table} onDelete={meta.onDelete} />;
     },
   },
 ];
@@ -385,9 +387,12 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   );
   const [rowSelection, setRowSelection] = React.useState({});
 
-  const allColumns = React.useMemo(() => {
-    return [...columns];
-  }, []);
+  const handleDelete = (id: string) => {
+    dispatch(deletePayment(id));
+    toast.success("Payment deleted successfully");
+  };
+
+  const allColumns = React.useMemo(() => columns, []);
 
   const table = useReactTable({
     data: payments,
@@ -412,6 +417,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
     },
     meta: {
       onEdit,
+      onDelete: handleDelete,
     },
   });
 

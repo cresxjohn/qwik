@@ -1,14 +1,14 @@
-import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
-import { Button } from "./button";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useState, useCallback, useRef, useEffect } from "react";
-import Image from "next/image";
 import {
   getAttachment,
-  isIndexedDBUrl,
   getIdFromUrl,
+  isIndexedDBUrl,
 } from "@/shared/utils/indexedDB";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "./button";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./dialog";
 
 interface ImageViewerProps {
   readonly images: string[];
