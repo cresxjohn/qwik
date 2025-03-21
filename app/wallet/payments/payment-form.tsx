@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -734,15 +735,10 @@ export function PaymentForm({
                   <div key={`attachment-${index}`} className="relative group">
                     <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
                       {base64String.startsWith("data:image/") ? (
-                        <Image
+                        <img
                           src={base64String}
                           alt={`Attachment ${index + 1}`}
                           className="w-full h-full object-cover"
-                          onError={() => {
-                            toast.error(
-                              `Failed to load attachment ${index + 1}`
-                            );
-                          }}
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center p-4">
