@@ -1,18 +1,6 @@
 "use client";
 
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { ImageViewer } from "@/components/ui/image-viewer";
-import dayjs from "dayjs";
-import { CalendarIcon, CreditCard, Link as LinkIcon, Tag } from "lucide-react";
-import { Payment } from "@/shared/types";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -23,7 +11,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { ImageViewer } from "@/components/ui/image-viewer";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Payment } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
+import dayjs from "dayjs";
+import { CalendarIcon, CreditCard, Link as LinkIcon, Tag } from "lucide-react";
+import Image from "next/image";
 
 interface PaymentInfoProps {
   payment: Payment | null;
