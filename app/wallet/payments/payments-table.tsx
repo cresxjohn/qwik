@@ -68,6 +68,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatCurrency } from "@/shared/utils";
 
 const SortableHeader = ({
   column,
@@ -287,15 +288,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         ),
         cell: ({ row }) => {
           const amount = row.getValue("amount") as number;
-          return (
-            <span className="font-medium">
-              $
-              {amount.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
-          );
+          return <span className="font-medium">{formatCurrency(amount)}</span>;
         },
         enableHiding: true,
         size: 100,
