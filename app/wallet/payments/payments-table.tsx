@@ -419,6 +419,11 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
       onEdit,
       onDelete: handleDelete,
     },
+    initialState: {
+      pagination: {
+        pageSize: 20,
+      },
+    },
   });
 
   return (
