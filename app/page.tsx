@@ -42,9 +42,9 @@ export default function Page() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-md">
                   <WalletMinimal className="size-10" />
                 </div>
-                <span className="sr-only">Qwik</span>
+                <span className="sr-only">Qwikfinx</span>
               </Link>
-              <h1 className="text-xl font-bold">Welcome to Qwik</h1>
+              <h1 className="text-xl font-bold">Welcome to Qwikfinx</h1>
               <div className="text-center text-sm">
                 Simple yet functional expense tracker
               </div>

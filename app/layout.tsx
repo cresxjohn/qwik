@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Wallet App",
+  title: "Qwikfinx",
   description: "A simple wallet application",
 };
 

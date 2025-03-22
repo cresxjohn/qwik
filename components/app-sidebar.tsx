@@ -210,7 +210,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <WalletMinimal className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Qwik</span>
+                  <span className="truncate font-semibold">Qwikfinx</span>
                   <span className="truncate text-xs">Simple Wallet</span>
                 </div>
               </a>
