@@ -427,9 +427,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
         }
       }
 
-      toast("Payments Imported", {
-        description: `Successfully imported ${previewData.length} payments`,
-      });
+      toast.success(`Successfully imported ${previewData.length} payments`);
 
       // Reset form state
       setPreviewData(null);
