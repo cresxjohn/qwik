@@ -43,3 +43,13 @@ export interface Account {
   afWaiverSpendingRequirement?: number | null;
   excludeFromBalances: boolean;
 }
+
+export interface Transaction {
+  id: string;
+  name: string;
+  amount: number;
+  account: string;
+  paymentDate: string;
+  category: string;
+  tags: string[];
+}
