@@ -53,12 +53,12 @@ export function PaymentInfo({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[480px] sm:max-w-[480px] overflow-y-auto flex flex-col">
-        <SheetHeader>
+      <SheetContent className="w-screen md:max-w-[600px] flex flex-col p-0 gap-0">
+        <SheetHeader className="p-4">
           <SheetTitle className="text-2xl font-bold">{payment.name}</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 mt-6 space-y-8 px-4 pb-24">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -235,20 +235,23 @@ export function PaymentInfo({
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
-          <div className="flex gap-2 justify-end">
+        <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4">
+          <div className="flex justify-end gap-2 flex-wrap">
             <Button
               variant="outline"
               onClick={() => {
                 onEdit(payment);
                 onOpenChange(false);
               }}
+              className="w-full md:w-auto"
             >
               Edit Payment
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">Delete Payment</Button>
+                <Button variant="destructive" className="w-full md:w-auto">
+                  Delete Payment
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
