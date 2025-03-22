@@ -15,7 +15,7 @@ import { Frequency, Payment } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
 import { addPayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
-import { AlertCircle, Download, Loader2, Upload } from "lucide-react";
+import { AlertCircle, Loader2, Upload } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
@@ -46,9 +46,9 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
   const handleDownloadTemplate = () => {
     const template = [
       "name,amount,account,category,startDate,frequency,toAccount,tags,link,endDateType,endDate,numberOfEvents,notes",
-      "Netflix,15.99,Checking,Subscriptions,2024-03-22,monthly,,entertainment;streaming,https://netflix.com,forever,,,Monthly streaming subscription",
-      "Gym Membership,49.99,Checking,Memberships,2024-03-22,monthly,,health;fitness,https://gym.com,numberOfEvents,,12,Monthly gym membership for 1 year",
-      "Electricity Bill,120.50,Checking,Utilities,2024-03-22,,,bills;utilities,https://electricity.com,date,2024-04-22,,One-time bill payment",
+      "Netflix,399.00,Checking,Subscriptions,2024-03-22,monthly,,entertainment;streaming,https://netflix.com,forever,,,Monthly streaming subscription",
+      "Gym Membership,1149.99,Checking,Memberships,2024-03-22,monthly,,health;fitness,https://gym.com,numberOfEvents,,12,Monthly gym membership for 1 year",
+      "Electricity Bill,1290.50,Checking,Utilities,2024-03-22,,,bills;utilities,https://electricity.com,date,2024-04-22,,One-time bill payment",
     ].join("\n");
 
     const blob = new Blob([template], { type: "text/csv" });
@@ -161,250 +161,240 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
     return errors;
   };
 
-  const handleFile = async (file: File) => {
-    if (!file) return;
-    if (file.type !== "text/csv") {
-      setError("Please upload a CSV file");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setProcessingStatus("Processing your file...");
-
-      const text = await file.text();
-      const allRows = text.split("\n").map((row) => row.trim());
-
-      // Filter out completely empty rows and rows with only commas
-      const rows = allRows.filter((row) => {
-        const trimmedRow = row.trim();
-        return (
-          trimmedRow !== "" &&
-          trimmedRow.split(",").some((cell) => cell.trim() !== "")
-        );
-      });
-
-      if (rows.length < 2) {
-        throw new Error(
-          "File must contain at least a header row and one data row"
-        );
-      }
-
-      // Update status if empty rows were removed
-      const emptyRowsCount = allRows.length - rows.length;
-      if (emptyRowsCount > 0) {
-        setProcessingStatus(
-          `Skipped ${emptyRowsCount} empty row${
-            emptyRowsCount === 1 ? "" : "s"
-          }`
-        );
-      }
-
-      // Update status for large files
-      if (rows.length > 100) {
-        setProcessingStatus(
-          "Processing large file, this might take a moment..."
-        );
-      }
-
-      const headers = rows[0].split(",").map((h) => h.trim());
-      const dataRows = rows.slice(1);
-
-      // Validate headers
-      const missingHeaders = REQUIRED_FIELDS.filter(
-        (field) => !headers.includes(field)
-      );
-      if (missingHeaders.length > 0) {
-        throw new Error(
-          `Missing required headers: ${missingHeaders.join(", ")}`
-        );
-      }
-
-      // Process in chunks for large datasets
-      const chunkSize = 100;
-      const validPayments: Payment[] = [];
-      const errors: string[] = [];
-      let skippedRows = 0;
-
-      for (let i = 0; i < dataRows.length; i += chunkSize) {
-        const chunk = dataRows.slice(i, i + chunkSize);
-
-        // Update progress for large files
-        if (dataRows.length > 100) {
-          const progress = Math.round((i / dataRows.length) * 100);
-          setProcessingStatus(`Processing... ${progress}% complete`);
-        }
-
-        chunk.forEach((row, index) => {
-          // Skip rows that are just whitespace or only contain commas
-          if (
-            !row.trim() ||
-            row.split(",").every((cell) => cell.trim() === "")
-          ) {
-            skippedRows++;
-            console.log("Skipped empty row:", row);
-            return;
-          }
-
-          const values = row.split(",").map((v) => v.trim());
-
-          // Check if row has correct number of columns
-          if (values.length !== headers.length) {
-            errors.push(
-              `Row ${i + index + 1}: Invalid number of columns. Expected ${
-                headers.length
-              }, got ${values.length}`
-            );
-            skippedRows++;
-            console.log("Skipped invalid columns row:", row);
-            return;
-          }
-
-          const rowData: Record<string, string> = {};
-          headers.forEach((header, i) => {
-            rowData[header] = values[i] || "";
-          });
-
-          // Skip if all required fields are empty
-          const hasRequiredFields = REQUIRED_FIELDS.some((field) =>
-            rowData[field]?.trim()
-          );
-          if (!hasRequiredFields) {
-            skippedRows++;
-            console.log("Skipped missing required fields row:", row);
-            return;
-          }
-
-          const rowErrors = validateRow(rowData, i + index);
-          if (rowErrors.length > 0) {
-            errors.push(...rowErrors);
-            skippedRows++;
-            console.log("Skipped invalid row:", row, rowErrors);
-            return;
-          }
-
-          // Convert tags string to array
-          const tags = rowData.tags
-            ? rowData.tags.split(";").map((t) => t.trim())
-            : [];
-
-          // Parse and validate start date
-          const startDateObj = dayjs(
-            rowData.startDate.trim(),
-            "YYYY-MM-DD",
-            true
-          );
-          if (!startDateObj.isValid()) {
-            throw new Error(
-              `Invalid start date format in row ${
-                i + index + 1
-              }. Use YYYY-MM-DD format. Got: "${rowData.startDate}"`
-            );
-          }
-          const startDate = startDateObj.startOf("day").toISOString();
-          let endDate: string | undefined;
-
-          // Calculate end date based on endDateType
-          if (rowData.endDateType === "date" && rowData.endDate) {
-            const endDateObj = dayjs(
-              rowData.endDate.trim(),
-              "YYYY-MM-DD",
-              true
-            );
-            if (!endDateObj.isValid()) {
-              throw new Error(
-                `Invalid end date format in row ${
-                  i + index + 1
-                }. Use YYYY-MM-DD format. Got: "${rowData.endDate}"`
-              );
-            }
-            endDate = endDateObj.startOf("day").toISOString();
-          } else if (
-            rowData.endDateType === "numberOfEvents" &&
-            rowData.numberOfEvents &&
-            rowData.frequency
-          ) {
-            const numEvents = parseInt(rowData.numberOfEvents);
-            const start = dayjs(startDate, "YYYY-MM-DD");
-            switch (rowData.frequency) {
-              case "weekly":
-                endDate = start
-                  .add(numEvents, "week")
-                  .startOf("day")
-                  .toISOString();
-                break;
-              case "fortnightly":
-                endDate = start
-                  .add(numEvents * 2, "week")
-                  .startOf("day")
-                  .toISOString();
-                break;
-              case "monthly":
-                endDate = start
-                  .add(numEvents, "month")
-                  .startOf("day")
-                  .toISOString();
-                break;
-              case "quarterly":
-                endDate = start
-                  .add(numEvents * 3, "month")
-                  .startOf("day")
-                  .toISOString();
-                break;
-              case "yearly":
-                endDate = start
-                  .add(numEvents, "year")
-                  .startOf("day")
-                  .toISOString();
-                break;
-            }
-          }
-
-          validPayments.push({
-            id: uuidv4(),
-            name: rowData.name,
-            amount: Number(rowData.amount),
-            frequency: rowData.frequency as Frequency | undefined,
-            account: rowData.account,
-            toAccount: rowData.toAccount || undefined,
-            category: rowData.category,
-            tags,
-            link: rowData.link || undefined,
-            startDate,
-            endDate,
-            notes: rowData.notes || undefined,
-            attachments: [],
-            recurring: !!rowData.frequency,
-            paymentType: "expense",
-            paymentDate: startDate,
-            lastPaymentDate: startDate,
-            nextDueDate: startDate,
-          });
-        });
-      }
-
-      console.log("Total skipped rows:", skippedRows);
-
-      if (errors.length > 0) {
-        setError(errors.join("\n"));
-        setProcessingStatus(null);
+  const handleFile = useCallback(
+    () => async (file: File) => {
+      if (!file) return;
+      if (file.type !== "text/csv") {
+        setError("Please upload a CSV file");
         return;
       }
 
-      setPreviewData(validPayments);
-      setShowGuide(false);
-      setProcessingStatus(null);
-    } catch (error) {
-      console.error("Error processing payments:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to process payments"
-      );
-      setProcessingStatus(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        setLoading(true);
+        setError(null);
+        setProcessingStatus("Processing your file...");
+
+        const text = await file.text();
+        const allRows = text.split("\n").map((row) => row.trim());
+
+        // Filter out completely empty rows and rows with only commas
+        const rows = allRows.filter((row) => {
+          const trimmedRow = row.trim();
+          return (
+            trimmedRow !== "" &&
+            trimmedRow.split(",").some((cell) => cell.trim() !== "")
+          );
+        });
+
+        if (rows.length < 2) {
+          throw new Error(
+            "File must contain at least a header row and one data row"
+          );
+        }
+
+        // Update status if empty rows were removed
+        const emptyRowsCount = allRows.length - rows.length;
+        if (emptyRowsCount > 0) {
+          setProcessingStatus(
+            `Skipped ${emptyRowsCount} empty row${
+              emptyRowsCount === 1 ? "" : "s"
+            }`
+          );
+        }
+
+        // Update status for large files
+        if (rows.length > 100) {
+          setProcessingStatus(
+            "Processing large file, this might take a moment..."
+          );
+        }
+
+        const headers = rows[0].split(",").map((h) => h.trim());
+        const dataRows = rows.slice(1);
+
+        // Validate headers
+        const missingHeaders = REQUIRED_FIELDS.filter(
+          (field) => !headers.includes(field)
+        );
+        if (missingHeaders.length > 0) {
+          throw new Error(
+            `Missing required headers: ${missingHeaders.join(", ")}`
+          );
+        }
+
+        // Process in chunks for large datasets
+        const chunkSize = 100;
+        const validPayments: Payment[] = [];
+        const errors: string[] = [];
+
+        for (let i = 0; i < dataRows.length; i += chunkSize) {
+          const chunk = dataRows.slice(i, i + chunkSize);
+
+          // Update progress for large files
+          if (dataRows.length > 100) {
+            const progress = Math.round((i / dataRows.length) * 100);
+            setProcessingStatus(`Processing... ${progress}% complete`);
+          }
+
+          chunk.forEach((row, index) => {
+            // Skip rows that are just whitespace or only contain commas
+            if (
+              !row.trim() ||
+              row.split(",").every((cell) => cell.trim() === "")
+            ) {
+              return;
+            }
+
+            const values = row.split(",").map((v) => v.trim());
+
+            // Check if row has correct number of columns
+            if (values.length !== headers.length) {
+              errors.push(
+                `Row ${i + index + 1}: Invalid number of columns. Expected ${
+                  headers.length
+                }, got ${values.length}`
+              );
+              return;
+            }
+
+            const rowData: Record<string, string> = {};
+            headers.forEach((header, i) => {
+              rowData[header] = values[i] || "";
+            });
+
+            // Skip if all required fields are empty
+            const hasRequiredFields = REQUIRED_FIELDS.some((field) =>
+              rowData[field]?.trim()
+            );
+            if (!hasRequiredFields) return;
+
+            const rowErrors = validateRow(rowData, i + index);
+            if (rowErrors.length > 0) {
+              errors.push(...rowErrors);
+              return;
+            }
+
+            // Convert tags string to array
+            const tags = rowData.tags
+              ? rowData.tags.split(";").map((t) => t.trim())
+              : [];
+
+            // Parse and validate start date
+            const startDateObj = dayjs(
+              rowData.startDate.trim(),
+              "YYYY-MM-DD",
+              true
+            );
+            if (!startDateObj.isValid()) {
+              throw new Error(
+                `Invalid start date format in row ${
+                  i + index + 1
+                }. Use YYYY-MM-DD format. Got: "${rowData.startDate}"`
+              );
+            }
+            const startDate = startDateObj.startOf("day").toISOString();
+            let endDate: string | undefined;
+
+            // Calculate end date based on endDateType
+            if (rowData.endDateType === "date" && rowData.endDate) {
+              const endDateObj = dayjs(
+                rowData.endDate.trim(),
+                "YYYY-MM-DD",
+                true
+              );
+              if (!endDateObj.isValid()) {
+                throw new Error(
+                  `Invalid end date format in row ${
+                    i + index + 1
+                  }. Use YYYY-MM-DD format. Got: "${rowData.endDate}"`
+                );
+              }
+              endDate = endDateObj.startOf("day").toISOString();
+            } else if (
+              rowData.endDateType === "numberOfEvents" &&
+              rowData.numberOfEvents &&
+              rowData.frequency
+            ) {
+              const numEvents = parseInt(rowData.numberOfEvents);
+              const start = dayjs(startDate, "YYYY-MM-DD");
+              switch (rowData.frequency) {
+                case "weekly":
+                  endDate = start
+                    .add(numEvents, "week")
+                    .startOf("day")
+                    .toISOString();
+                  break;
+                case "fortnightly":
+                  endDate = start
+                    .add(numEvents * 2, "week")
+                    .startOf("day")
+                    .toISOString();
+                  break;
+                case "monthly":
+                  endDate = start
+                    .add(numEvents, "month")
+                    .startOf("day")
+                    .toISOString();
+                  break;
+                case "quarterly":
+                  endDate = start
+                    .add(numEvents * 3, "month")
+                    .startOf("day")
+                    .toISOString();
+                  break;
+                case "yearly":
+                  endDate = start
+                    .add(numEvents, "year")
+                    .startOf("day")
+                    .toISOString();
+                  break;
+              }
+            }
+
+            validPayments.push({
+              id: uuidv4(),
+              name: rowData.name,
+              amount: Number(rowData.amount),
+              frequency: rowData.frequency as Frequency | undefined,
+              account: rowData.account,
+              toAccount: rowData.toAccount || undefined,
+              category: rowData.category,
+              tags,
+              link: rowData.link || undefined,
+              startDate,
+              endDate,
+              notes: rowData.notes || undefined,
+              attachments: [],
+              recurring: !!rowData.frequency,
+              paymentType: "expense",
+              paymentDate: startDate,
+              lastPaymentDate: startDate,
+              nextDueDate: startDate,
+            });
+          });
+        }
+
+        if (errors.length > 0) {
+          setError(errors.join("\n"));
+          setProcessingStatus(null);
+          return;
+        }
+
+        setPreviewData(validPayments);
+        setShowGuide(false);
+        setProcessingStatus(null);
+      } catch (error) {
+        console.error("Error processing payments:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to process payments"
+        );
+        setProcessingStatus(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const handleImport = () => {
     if (!previewData) return;
@@ -432,7 +422,10 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
         }
       }
 
-      toast.success(`Successfully imported ${previewData.length} payments`);
+      toast("Payments Imported", {
+        description: `Successfully imported ${previewData.length} payments`,
+      });
+
       // Reset form state
       setPreviewData(null);
       setShowGuide(true);
@@ -457,7 +450,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
       setDragActive(false);
 
       if (e.dataTransfer.files?.[0]) {
-        handleFile(e.dataTransfer.files[0]);
+        handleFile()(e.dataTransfer.files[0]);
       }
     },
     [handleFile]
@@ -488,7 +481,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="px-6 py-4 space-y-4">
+          <div className="px-6 space-y-4">
             {!previewData && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -501,7 +494,6 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                     onClick={handleDownloadTemplate}
                     className="h-8"
                   >
-                    <Download className="mr-2 h-4 w-4" />
                     Download Template
                   </Button>
                 </div>
@@ -522,7 +514,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                     type="file"
                     accept=".csv"
                     onChange={(e) =>
-                      e.target.files?.[0] && handleFile(e.target.files[0])
+                      e.target.files?.[0] && handleFile()(e.target.files[0])
                     }
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     disabled={loading}
