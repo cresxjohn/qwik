@@ -9,17 +9,22 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { useDispatch } from "react-redux";
+import { addPayment } from "@/store/slices/paymentsSlice";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Frequency, Payment } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
-import { addPayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useDispatch } from "react-redux";
-import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
+import { cn } from "@/lib/utils";
 
 interface ImportSheetProps {
   readonly open: boolean;
@@ -806,352 +811,371 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                       to structure your CSV data.
                     </p>
 
-                    <Tabs defaultValue="forever" className="w-full">
-                      <TabsList className="w-full mb-4">
-                        <TabsTrigger value="forever" className="flex-1">
+                    <Accordion
+                      type="single"
+                      collapsible
+                      className="w-full space-y-4"
+                    >
+                      <AccordionItem
+                        value="forever"
+                        className="border rounded-lg"
+                      >
+                        <AccordionTrigger className="px-4 hover:no-underline">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-green-500"></div>
                             Ongoing Subscription
                           </div>
-                        </TabsTrigger>
-                        <TabsTrigger value="numberOfEvents" className="flex-1">
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-4">
+                            <div className="rounded-lg border bg-muted/30 p-3">
+                              <h5 className="font-medium mb-2">
+                                Ongoing Subscription
+                              </h5>
+                              <p className="text-sm text-muted-foreground">
+                                Use this format for subscriptions or payments
+                                that continue indefinitely until cancelled.
+                                Perfect for streaming services, gym memberships,
+                                or any recurring payment without a set end date.
+                              </p>
+                              <div className="mt-2 text-sm">
+                                <strong>Example:</strong> Netflix monthly
+                                subscription at $15.99
+                              </div>
+                            </div>
+                            <div className="rounded-md border overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b bg-muted/50">
+                                    <th className="text-left px-3 py-2 font-medium">
+                                      Field
+                                    </th>
+                                    <th className="text-left px-3 py-2 font-medium">
+                                      Value
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      name
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Netflix
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      amount
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      15.99
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      account
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Checking
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      category
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Subscriptions
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      startDate
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      2024-03-22
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      frequency
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      monthly
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      tags
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      entertainment;streaming
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      link
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      https://netflix.com
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      endDateType
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      forever
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem
+                        value="numberOfEvents"
+                        className="border rounded-lg"
+                      >
+                        <AccordionTrigger className="px-4 hover:no-underline">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                             Fixed Number of Payments
                           </div>
-                        </TabsTrigger>
-                        <TabsTrigger value="date" className="flex-1">
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-4">
+                            <div className="rounded-lg border bg-muted/30 p-3">
+                              <h5 className="font-medium mb-2">
+                                Fixed Number of Payments
+                              </h5>
+                              <p className="text-sm text-muted-foreground">
+                                Use this format when you know exactly how many
+                                times a payment will repeat. Great for
+                                fixed-term contracts or installment payments.
+                              </p>
+                              <div className="mt-2 text-sm">
+                                <strong>Example:</strong> 12 monthly gym
+                                membership payments at $49.99
+                              </div>
+                            </div>
+                            <div className="rounded-md border overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b bg-muted/50">
+                                    <th className="text-left px-3 py-2 font-medium">
+                                      Field
+                                    </th>
+                                    <th className="text-left px-3 py-2 font-medium">
+                                      Value
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      name
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Gym Membership
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      amount
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      49.99
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      account
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Checking
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      category
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Memberships
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      startDate
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      2024-03-22
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      frequency
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      monthly
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      tags
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      health;fitness
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      link
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      https://gym.com
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      endDateType
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      numberOfEvents
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      numberOfEvents
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      12
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="date" className="border rounded-lg">
+                        <AccordionTrigger className="px-4 hover:no-underline">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-orange-500"></div>
                             End Date
                           </div>
-                        </TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="forever" className="space-y-4">
-                        <div className="rounded-lg border bg-muted/30 p-3">
-                          <h5 className="font-medium mb-2">
-                            Ongoing Subscription
-                          </h5>
-                          <p className="text-sm text-muted-foreground">
-                            Use this format for subscriptions or payments that
-                            continue indefinitely until cancelled. Perfect for
-                            streaming services, gym memberships, or any
-                            recurring payment without a set end date.
-                          </p>
-                          <div className="mt-2 text-sm">
-                            <strong>Example:</strong> Netflix monthly
-                            subscription at $15.99
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-4">
+                            <div className="rounded-lg border bg-muted/30 p-3">
+                              <h5 className="font-medium mb-2">
+                                Specific End Date
+                              </h5>
+                              <p className="text-sm text-muted-foreground">
+                                Use this format when you know the exact date the
+                                payment should end. Ideal for fixed-term
+                                contracts or payments with a known end date.
+                              </p>
+                              <div className="mt-2 text-sm">
+                                <strong>Example:</strong> One-time electricity
+                                bill of $120.50
+                              </div>
+                            </div>
+                            <div className="rounded-md border overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b bg-muted/50">
+                                    <th className="text-left px-3 py-2 font-medium">
+                                      Field
+                                    </th>
+                                    <th className="text-left px-3 py-2 font-medium">
+                                      Value
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      name
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Electricity Bill
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      amount
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      120.50
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      account
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Checking
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      category
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      Utilities
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      startDate
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      2024-03-22
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      tags
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      bills;utilities
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      link
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      https://electricity.com
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      endDateType
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      date
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      endDate
+                                    </td>
+                                    <td className="px-3 py-2 font-mono text-xs">
+                                      2024-04-22
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                        </div>
-                        <div className="rounded-md border overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b bg-muted/50">
-                                <th className="text-left px-3 py-2 font-medium">
-                                  Field
-                                </th>
-                                <th className="text-left px-3 py-2 font-medium">
-                                  Value
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  name
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Netflix
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  amount
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  15.99
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  account
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Checking
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  category
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Subscriptions
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  startDate
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  2024-03-22
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  frequency
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  monthly
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  tags
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  entertainment;streaming
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  link
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  https://netflix.com
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  endDateType
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  forever
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="numberOfEvents" className="space-y-4">
-                        <div className="rounded-lg border bg-muted/30 p-3">
-                          <h5 className="font-medium mb-2">
-                            Fixed Number of Payments
-                          </h5>
-                          <p className="text-sm text-muted-foreground">
-                            Use this format when you know exactly how many times
-                            a payment will repeat. Great for fixed-term
-                            contracts or installment payments.
-                          </p>
-                          <div className="mt-2 text-sm">
-                            <strong>Example:</strong> 12 monthly gym membership
-                            payments at $49.99
-                          </div>
-                        </div>
-                        <div className="rounded-md border overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b bg-muted/50">
-                                <th className="text-left px-3 py-2 font-medium">
-                                  Field
-                                </th>
-                                <th className="text-left px-3 py-2 font-medium">
-                                  Value
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  name
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Gym Membership
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  amount
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  49.99
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  account
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Checking
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  category
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Memberships
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  startDate
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  2024-03-22
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  frequency
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  monthly
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  tags
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  health;fitness
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  link
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  https://gym.com
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  endDateType
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  numberOfEvents
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  numberOfEvents
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  12
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="date" className="space-y-4">
-                        <div className="rounded-lg border bg-muted/30 p-3">
-                          <h5 className="font-medium mb-2">
-                            Specific End Date
-                          </h5>
-                          <p className="text-sm text-muted-foreground">
-                            Use this format when you know the exact date the
-                            payment should end. Ideal for fixed-term contracts
-                            or payments with a known end date.
-                          </p>
-                          <div className="mt-2 text-sm">
-                            <strong>Example:</strong> One-time electricity bill
-                            of $120.50
-                          </div>
-                        </div>
-                        <div className="rounded-md border overflow-hidden">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b bg-muted/50">
-                                <th className="text-left px-3 py-2 font-medium">
-                                  Field
-                                </th>
-                                <th className="text-left px-3 py-2 font-medium">
-                                  Value
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  name
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Electricity Bill
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  amount
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  120.50
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  account
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Checking
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  category
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  Utilities
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  startDate
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  2024-03-22
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  tags
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  bills;utilities
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  link
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  https://electricity.com
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  endDateType
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  date
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  endDate
-                                </td>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  2024-04-22
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
                   </div>
                 </div>
               </div>
