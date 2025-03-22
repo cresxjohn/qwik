@@ -1,6 +1,46 @@
 "use client";
 
-import * as React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Transaction } from "@/shared/types";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,44 +53,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Transaction } from "@/shared/types";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Check, CalendarIcon, ArrowDown, ArrowUp } from "lucide-react";
 import dayjs from "dayjs";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { ArrowDown, ArrowUp, CalendarIcon, Check } from "lucide-react";
+import * as React from "react";
 import { DateRange } from "react-day-picker";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
 
 function formatColumnName(columnId: string): string {
   switch (columnId) {
@@ -553,26 +559,6 @@ export const columns: ColumnDef<Transaction>[] = [
     },
   },
   {
-    accessorKey: "paymentDate",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Payment Date</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("paymentDate") as string);
-      return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
-    },
-    filterFn: (row, id, value: DateRange | undefined) => {
-      if (!value?.from) return true;
-      const rowDate = dayjs(new Date(row.getValue(id) as string));
-      const from = dayjs(value.from);
-      const to = value.to ? dayjs(value.to) : from;
-      return (
-        rowDate.isAfter(from.subtract(1, "day")) &&
-        rowDate.isBefore(to.add(1, "day"))
-      );
-    },
-  },
-  {
     accessorKey: "category",
     header: ({ column }) => (
       <SortableHeader column={column}>Category</SortableHeader>
@@ -604,6 +590,26 @@ export const columns: ColumnDef<Transaction>[] = [
     filterFn: (row, id, value: string[]) => {
       const tags = row.getValue(id) as string[];
       return value.some((tag) => tags.includes(tag));
+    },
+  },
+  {
+    accessorKey: "paymentDate",
+    header: ({ column }) => (
+      <SortableHeader column={column}>Payment Date</SortableHeader>
+    ),
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("paymentDate") as string);
+      return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
+    },
+    filterFn: (row, id, value: DateRange | undefined) => {
+      if (!value?.from) return true;
+      const rowDate = dayjs(new Date(row.getValue(id) as string));
+      const from = dayjs(value.from);
+      const to = value.to ? dayjs(value.to) : from;
+      return (
+        rowDate.isAfter(from.subtract(1, "day")) &&
+        rowDate.isBefore(to.add(1, "day"))
+      );
     },
   },
 ];
@@ -897,14 +903,24 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
               </div>
             </SheetContent>
           </Sheet>
-          <Button variant="outline" onClick={handleExport}>
-            Export CSV
-            {table.getFilteredSelectedRowModel().rows.length > 0 && (
-              <Badge variant="secondary" className="ml-2 rounded-sm px-1">
-                {table.getFilteredSelectedRowModel().rows.length} selected
-              </Badge>
-            )}
-          </Button>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={handleExport}>
+                  Export
+                  {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 rounded-sm px-1">
+                      {table.getFilteredSelectedRowModel().rows.length} selected
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Export as CSV</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       <div className="rounded-md border">

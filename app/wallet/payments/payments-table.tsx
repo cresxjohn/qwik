@@ -62,6 +62,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const SortableHeader = ({
   column,
@@ -559,14 +565,23 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" onClick={handleExport}>
-            Export CSV
-            {table.getFilteredSelectedRowModel().rows.length > 0 && (
-              <Badge variant="secondary" className="ml-2 rounded-sm px-1">
-                {table.getFilteredSelectedRowModel().rows.length} selected
-              </Badge>
-            )}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={handleExport}>
+                  Export
+                  {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 rounded-sm px-1">
+                      {table.getFilteredSelectedRowModel().rows.length} selected
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Export as CSV</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       <div className="rounded-md border">
