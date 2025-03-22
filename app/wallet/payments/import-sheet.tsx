@@ -470,18 +470,18 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:max-w-[600px] flex flex-col p-0">
-        <SheetHeader className="px-6 py-4">
+      <SheetContent className="w-screen md:max-w-[600px] flex flex-col p-0 gap-0">
+        <SheetHeader className="p-4">
           <SheetTitle>Import Payments</SheetTitle>
           <SheetDescription className="text-base">
             {previewData
               ? `Review ${previewData.length} payments before importing`
-              : "Save time by importing multiple payments at once using a CSV file. Download our template to get started, or prepare your own file following our guide below."}
+              : "Import multiple payments quickly with a CSV file. Download our template or follow the guide below."}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="px-6 space-y-4">
+          <div className="p-4 space-y-4">
             {!previewData && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1159,10 +1159,20 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
           </div>
         </div>
 
-        <div className="border-t bg-background px-6 py-4">
-          <div className="flex justify-end gap-2">
+        <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4">
+          <div className="flex justify-end gap-2 flex-wrap">
             {previewData ? (
               <>
+                <Button
+                  onClick={handleImport}
+                  disabled={loading}
+                  className="w-full md:w-auto order-first md:order-last"
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading
+                    ? "Importing..."
+                    : `Import ${previewData.length} Payments`}
+                </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1171,26 +1181,27 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                     setError(null);
                   }}
                   disabled={loading}
+                  className="w-full md:w-auto order-last md:order-first"
                 >
                   Upload Different File
-                </Button>
-                <Button onClick={handleImport} disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {loading
-                    ? "Importing..."
-                    : `Import ${previewData.length} Payments`}
                 </Button>
               </>
             ) : (
               <>
                 <Button
+                  disabled={true}
+                  className="w-full md:w-auto order-first md:order-last"
+                >
+                  Import
+                </Button>
+                <Button
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                   disabled={loading}
+                  className="w-full md:w-auto order-last md:order-first"
                 >
                   Cancel
                 </Button>
-                <Button disabled={true}>Import</Button>
               </>
             )}
           </div>

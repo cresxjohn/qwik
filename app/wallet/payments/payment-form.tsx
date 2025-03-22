@@ -355,8 +355,8 @@ export function PaymentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative flex flex-col h-full">
-      <div className="flex-1 space-y-6 px-4 overflow-y-auto">
+    <form onSubmit={handleSubmit} className="relative flex flex-col">
+      <div className="flex-1 space-y-6 overflow-y-auto p-4">
         <div className="space-y-6">
           {!initialData && (
             <div className="space-y-2">
@@ -765,17 +765,26 @@ export function PaymentForm({
           </div>
         </div>
       </div>{" "}
-      <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 mt-4">
+      <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4">
         {error && (
           <div className="text-sm text-red-500 text-center mb-4">{error}</div>
         )}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <div className="flex justify-end gap-2 flex-wrap">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full md:w-auto order-first md:order-last"
+          >
+            {loading && <Loader2 className="mr-2 h-4 animate-spin" />}
             Save Changes
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-full md:w-auto order-last md:order-first"
+          >
+            Cancel
           </Button>
         </div>
       </div>

@@ -192,212 +192,6 @@ const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
   );
 };
 
-export const columns: ColumnDef<Payment>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        onClick={(event) => event.stopPropagation()}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Name</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const payment = row.original;
-      return (
-        <div className="flex items-center gap-2">
-          <span>{payment.name}</span>
-          {payment.link && (
-            <a
-              href={payment.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "category",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Category</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const category = row.getValue("category") as string;
-      return <div className="capitalize">{category}</div>;
-    },
-  },
-  {
-    accessorKey: "amount",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Amount</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const amount = row.getValue("amount") as number;
-      const formatted = new Intl.NumberFormat("en-PH", {
-        style: "currency",
-        currency: "PHP",
-      }).format(amount);
-
-      return (
-        <div className={amount > 0 ? "text-green-500" : "text-red-500"}>
-          {formatted}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "account",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Account</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const account = row.getValue("account") as string | undefined;
-      return <div>{account || "-"}</div>;
-    },
-  },
-  {
-    accessorKey: "startDate",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Start Date</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const date = row.getValue("startDate") as string;
-      return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
-    },
-  },
-  {
-    accessorKey: "recurring",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Recurring</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const recurring = row.getValue("recurring") as boolean | undefined;
-      if (!recurring) return null;
-      return (
-        <Badge variant="outline" className="bg-secondary">
-          <RefreshCw className="mr-1 h-3 w-3" />
-          Recurring
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "frequency",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Frequency</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const frequency = row.getValue("frequency") as string | undefined;
-      if (!frequency) return null;
-      return <div className="capitalize">{frequency}</div>;
-    },
-  },
-  {
-    accessorKey: "endDate",
-    header: ({ column }) => (
-      <SortableHeader column={column}>End Date</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const date = row.getValue("endDate");
-      const recurring = row.original.recurring;
-      if (!recurring || !date) return null;
-      const parsedDate = date instanceof Date ? date : new Date(date as string);
-      if (isNaN(parsedDate.getTime())) return "Invalid date";
-      return <div>{dayjs(parsedDate).format("MMM D, YYYY")}</div>;
-    },
-  },
-  {
-    accessorKey: "nextDueDate",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Next Due</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const date = row.getValue("nextDueDate") as Date | undefined;
-      if (!date || !(date instanceof Date)) return null;
-      return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
-    },
-  },
-  {
-    id: "daysToGo",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Days to Go</SortableHeader>
-    ),
-    accessorFn: (row) => {
-      const nextDueDate = row.nextDueDate;
-      if (!nextDueDate) return null;
-
-      // Use start of day to ensure consistent rendering between server and client
-      const today = dayjs().startOf("day");
-      const dueDate = dayjs(nextDueDate).startOf("day");
-      return dueDate.diff(today, "day");
-    },
-    cell: ({ getValue }) => {
-      const daysToGo = getValue() as number | null;
-      if (daysToGo === null) return null;
-
-      if (daysToGo < -1)
-        return (
-          <div className="text-red-500">{Math.abs(daysToGo)} days lapsed</div>
-        );
-      if (daysToGo === -1) return <div className="text-red-500">Yesterday</div>;
-      if (daysToGo === 0) return <div className="text-orange-500">Today</div>;
-      if (daysToGo === 1) return <div>Tomorrow</div>;
-      return <div>{daysToGo} days to go</div>;
-    },
-  },
-  {
-    accessorKey: "tags",
-    header: ({ column }) => (
-      <SortableHeader column={column}>Tags</SortableHeader>
-    ),
-    cell: ({ row }) => {
-      const tags: string[] = row.getValue("tags");
-      return (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row, table }) => {
-      const meta = table.options.meta as { onDelete: (id: string) => void };
-      return <ActionCell row={row} table={table} onDelete={meta.onDelete} />;
-    },
-  },
-];
-
 export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   const dispatch = useDispatch();
   const columnVisibility = useSelector(
@@ -406,27 +200,251 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isInfoSheetOpen, setIsInfoSheetOpen] = useState(false);
 
-  const [sorting, setSorting] = React.useState<SortingState>([
-    {
-      id: "daysToGo",
-      desc: false,
-    },
-  ]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
   const [rowSelection, setRowSelection] = React.useState({});
 
-  const handleDelete = (id: string) => {
-    dispatch(deletePayment(id));
-    toast.success("Payment deleted successfully");
-  };
+  const handleDelete = React.useCallback(
+    (id: string) => {
+      dispatch(deletePayment(id));
+      toast.success("Payment deleted successfully");
+    },
+    [dispatch]
+  );
 
-  const allColumns = React.useMemo(() => columns, []);
+  const columns = React.useMemo<ColumnDef<Payment>[]>(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            onClick={(event) => event.stopPropagation()}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        size: 40,
+      },
+      {
+        accessorKey: "name",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Name</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const payment = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{payment.name}</span>
+              {payment.link && (
+                <a
+                  href={payment.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </div>
+          );
+        },
+        size: 200,
+      },
+      {
+        accessorKey: "category",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Category</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const category = row.getValue("category") as string;
+          return <Badge variant="secondary">{category}</Badge>;
+        },
+        enableHiding: true,
+        size: 120,
+      },
+      {
+        accessorKey: "amount",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Amount</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const amount = row.getValue("amount") as number;
+          return (
+            <span className="font-medium">
+              $
+              {amount.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          );
+        },
+        enableHiding: true,
+        size: 100,
+      },
+      {
+        accessorKey: "account",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Account</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const account = row.getValue("account") as string | undefined;
+          return <div>{account || "-"}</div>;
+        },
+      },
+      {
+        accessorKey: "startDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Start Date</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("startDate") as string;
+          return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
+        },
+      },
+      {
+        accessorKey: "recurring",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Recurring</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const recurring = row.getValue("recurring") as boolean | undefined;
+          if (!recurring) return null;
+          return (
+            <Badge variant="outline" className="bg-secondary">
+              <RefreshCw className="mr-1 h-3 w-3" />
+              Recurring
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: "frequency",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Frequency</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const frequency = row.getValue("frequency") as string;
+          return <span className="capitalize">{frequency}</span>;
+        },
+        enableHiding: true,
+        size: 100,
+      },
+      {
+        accessorKey: "endDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>End Date</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("endDate");
+          const recurring = row.original.recurring;
+          if (!recurring || !date) return null;
+          const parsedDate =
+            date instanceof Date ? date : new Date(date as string);
+          if (isNaN(parsedDate.getTime())) return "Invalid date";
+          return <div>{dayjs(parsedDate).format("MMM D, YYYY")}</div>;
+        },
+      },
+      {
+        accessorKey: "nextDueDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Next Due</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("nextDueDate") as string;
+          return (
+            <span className="font-medium">
+              {dayjs(date).format("MMM D, YYYY")}
+            </span>
+          );
+        },
+        enableHiding: true,
+        size: 120,
+      },
+      {
+        id: "daysToGo",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Days to Go</SortableHeader>
+        ),
+        accessorFn: (row) => {
+          const nextDueDate = row.nextDueDate;
+          if (!nextDueDate) return null;
+
+          // Use start of day to ensure consistent rendering between server and client
+          const today = dayjs().startOf("day");
+          const dueDate = dayjs(nextDueDate).startOf("day");
+          return dueDate.diff(today, "day");
+        },
+        cell: ({ getValue }) => {
+          const daysToGo = getValue() as number | null;
+          if (daysToGo === null) return null;
+
+          if (daysToGo < -1)
+            return (
+              <div className="text-red-500">
+                {Math.abs(daysToGo)} days lapsed
+              </div>
+            );
+          if (daysToGo === -1)
+            return <div className="text-red-500">Yesterday</div>;
+          if (daysToGo === 0)
+            return <div className="text-orange-500">Today</div>;
+          if (daysToGo === 1) return <div>Tomorrow</div>;
+          return <div>{daysToGo} days to go</div>;
+        },
+      },
+      {
+        accessorKey: "tags",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Tags</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const tags: string[] = row.getValue("tags");
+          return (
+            <div className="flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        cell: ({ row, table }) => (
+          <ActionCell row={row} table={table} onDelete={handleDelete} />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        size: 40,
+      },
+    ],
+    [handleDelete]
+  );
 
   const table = useReactTable({
     data: payments,
-    columns: allColumns,
+    columns: columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -526,21 +544,21 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   };
 
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between py-4">
-        <Input
-          placeholder="Filter payments..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-
-        <div className="flex gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 w-full">
+          <Input
+            placeholder="Filter payments..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("name")?.setFilterValue(event.target.value)
+            }
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
+              <Button variant="outline" size="sm" className="ml-auto sm:ml-0">
                 Columns
               </Button>
             </DropdownMenuTrigger>
@@ -564,11 +582,10 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" onClick={handleExport}>
+                <Button variant="outline" size="sm" onClick={handleExport}>
                   Export
                   {table.getFilteredSelectedRowModel().rows.length > 0 && (
                     <Badge variant="secondary" className="ml-2 rounded-sm px-1">
@@ -584,6 +601,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
           </TooltipProvider>
         </div>
       </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -591,7 +609,10 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="p-3">
+                    <TableHead
+                      key={header.id}
+                      style={{ width: header.getSize() }}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -617,7 +638,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-2">
+                    <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -632,19 +653,20 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No payments found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="text-muted-foreground flex-1 text-sm">
+
+      <div className="flex items-center justify-between">
+        <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className={columns.length > 0 ? "space-x-2" : "ml-auto space-x-2"}>
+        <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="sm"

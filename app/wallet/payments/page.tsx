@@ -44,8 +44,8 @@ export default function PaymentsPage() {
 
   return (
     <SidebarInset>
-      <header className="flex h-16 shrink-0 items-center gap-2">
-        <div className="flex items-center gap-2 px-4">
+      <header className="flex h-14 md:h-16 shrink-0 items-center gap-2">
+        <div className="flex items-center gap-2 px-2 md:px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
@@ -62,19 +62,30 @@ export default function PaymentsPage() {
         </div>
       </header>
 
-      <div className="flex-1 space-y-4 p-8 pt-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Payments</h1>
+            <h1 className="text-xl md:text-2xl font-bold">Payments</h1>
             <p className="text-sm text-muted-foreground">
               Manage your one-time and recurring payments and subscriptions
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportOpen(true)}
+              className="order-last md:order-first"
+            >
               Import
             </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>
+            <Button
+              size="sm"
+              onClick={() => setIsCreateOpen(true)}
+              className="order-first md:order-last"
+            >
+              Add Payment
+            </Button>
           </div>
         </div>
 
@@ -84,8 +95,8 @@ export default function PaymentsPage() {
         />
 
         <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <SheetContent className="w-[420px] sm:max-w-[420px] overflow-y-auto">
-            <SheetHeader>
+          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+            <SheetHeader className="p-4">
               <SheetTitle>Create Payment</SheetTitle>
             </SheetHeader>
             <PaymentForm
@@ -99,8 +110,8 @@ export default function PaymentsPage() {
           open={!!editingPayment}
           onOpenChange={(open) => !open && setEditingPayment(undefined)}
         >
-          <SheetContent className="w-[420px] sm:max-w-[420px] overflow-y-auto">
-            <SheetHeader>
+          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+            <SheetHeader className="p-4">
               <SheetTitle>Edit Payment</SheetTitle>
             </SheetHeader>
             <PaymentForm
