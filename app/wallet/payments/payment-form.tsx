@@ -107,6 +107,15 @@ export function PaymentForm({
       }
     }
 
+    // Convert string[] attachments to Attachment[]
+    const attachments =
+      initialData?.attachments?.map((url) => ({
+        url,
+        key: url, // Using URL as key since we don't have the original key
+        thumbnailUrl: url, // Using same URL for thumbnail since we don't have the original
+        thumbnailKey: url, // Using same URL as key for thumbnail
+      })) || [];
+
     return {
       name: initialData?.name ?? "",
       amount: initialData?.amount.toString() ?? "",
@@ -122,7 +131,7 @@ export function PaymentForm({
       numberOfEvents,
       endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
       notes: initialData?.notes ?? "",
-      attachments: initialData?.attachments || [],
+      attachments,
     };
   });
 
@@ -305,7 +314,9 @@ export function PaymentForm({
           : undefined,
         notes: formData.notes || undefined,
         attachments:
-          formData.attachments.length > 0 ? formData.attachments : undefined,
+          formData.attachments.length > 0
+            ? formData.attachments.map((attachment) => attachment.url)
+            : undefined,
       };
 
       if (initialData) {
