@@ -24,9 +24,11 @@ import { toast } from "sonner";
 import { PaymentForm } from "./payment-form";
 import { PaymentsTable } from "./payments-table";
 import { Payment } from "@/shared/types";
+import { ImportSheet } from "./import-sheet";
 
 export default function PaymentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | undefined>();
   const payments = useSelector((state: RootState) => state.payments.items);
 
@@ -68,7 +70,12 @@ export default function PaymentsPage() {
               Manage your one-time and recurring payments and subscriptions
             </p>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              Import
+            </Button>
+            <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>
+          </div>
         </div>
 
         <PaymentsTable
@@ -103,6 +110,8 @@ export default function PaymentsPage() {
             />
           </SheetContent>
         </Sheet>
+
+        <ImportSheet open={isImportOpen} onOpenChange={setIsImportOpen} />
       </div>
     </SidebarInset>
   );
