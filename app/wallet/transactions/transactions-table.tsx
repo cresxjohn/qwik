@@ -643,6 +643,9 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
     },
     initialState: {
       sorting: [{ id: "paymentDate", desc: true }],
+      pagination: {
+        pageSize: 20,
+      },
     },
   });
 
@@ -770,16 +773,14 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
   return (
     <div className="w-full">
       <div className="flex justify-between items-center gap-2 py-4 w-full">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Filter by name..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        </div>
+        <Input
+          placeholder="Filter by name..."
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("name")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -934,7 +935,7 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-3 py-2">
+                    <TableCell key={cell.id} className="px-3 py-3">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
