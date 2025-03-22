@@ -3,6 +3,7 @@ import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client, S3_BUCKET } from "@/shared/config/aws";
 import { v4 as uuidv4 } from "uuid";
+import sharp from "sharp";
 
 export async function POST(request: Request) {
   try {
@@ -23,21 +24,41 @@ export async function POST(request: Request) {
 
     // Generate a unique filename
     const fileExtension = file.name.split(".").pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
+    const fileName = `${uuidv4()}`;
 
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Upload to S3
-    const command = new PutObjectCommand({
+    // Generate thumbnail using sharp
+    const thumbnail = await sharp(buffer)
+      .resize(300, 300, {
+        fit: "cover",
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: 60 })
+      .toBuffer();
+
+    // Upload original to S3
+    const originalCommand = new PutObjectCommand({
       Bucket: S3_BUCKET,
-      Key: `attachments/${fileName}`,
+      Key: `attachments/${fileName}.${fileExtension}`,
       Body: buffer,
       ContentType: file.type,
     });
 
+    // Upload thumbnail to S3
+    const thumbnailCommand = new PutObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: `attachments/thumbnails/${fileName}.jpg`,
+      Body: thumbnail,
+      ContentType: "image/jpeg",
+    });
+
     try {
-      await s3Client.send(command);
+      await Promise.all([
+        s3Client.send(originalCommand),
+        s3Client.send(thumbnailCommand),
+      ]);
     } catch (s3Error) {
       console.error("S3 Upload Error:", s3Error);
       return NextResponse.json(
@@ -49,19 +70,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate a signed URL that expires in 1 week
-    const getCommand = new GetObjectCommand({
-      Bucket: S3_BUCKET,
-      Key: `attachments/${fileName}`,
-    });
-
-    const signedUrl = await getSignedUrl(s3Client, getCommand, {
-      expiresIn: 604800,
-    }); // 1 week in seconds
+    // Generate signed URLs for both original and thumbnail
+    const [originalUrl, thumbnailUrl] = await Promise.all([
+      getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: `attachments/${fileName}.${fileExtension}`,
+        }),
+        { expiresIn: 604800 } // 1 week
+      ),
+      getSignedUrl(
+        s3Client,
+        new GetObjectCommand({
+          Bucket: S3_BUCKET,
+          Key: `attachments/thumbnails/${fileName}.jpg`,
+        }),
+        { expiresIn: 604800 } // 1 week
+      ),
+    ]);
 
     return NextResponse.json({
-      url: signedUrl,
-      key: `attachments/${fileName}`, // Store the S3 key for future reference
+      url: originalUrl,
+      thumbnailUrl: thumbnailUrl,
+      key: `attachments/${fileName}.${fileExtension}`,
+      thumbnailKey: `attachments/thumbnails/${fileName}.jpg`,
     });
   } catch (error) {
     console.error("Error in upload route:", error);

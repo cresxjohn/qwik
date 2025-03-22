@@ -203,6 +203,8 @@ export function PaymentForm({
             return {
               url: data.url,
               key: data.key,
+              thumbnailUrl: data.thumbnailUrl,
+              thumbnailKey: data.thumbnailKey,
             };
           } catch (error) {
             console.error("Error uploading file:", error);
@@ -213,13 +215,7 @@ export function PaymentForm({
 
       setFormData((prev) => ({
         ...prev,
-        attachments: [
-          ...prev.attachments,
-          ...uploadResults.map((result) => ({
-            url: result.url,
-            key: result.key,
-          })),
-        ],
+        attachments: [...prev.attachments, ...uploadResults],
       }));
     } catch (error) {
       console.error("Error processing attachments:", error);
@@ -393,7 +389,6 @@ export function PaymentForm({
                 placeholder="0.00"
                 type="number"
                 step="0.01"
-                min="0"
                 value={formData.amount}
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
@@ -723,7 +718,7 @@ export function PaymentForm({
                       {attachment.url.startsWith("data:image/") ||
                       attachment.url.startsWith("https://") ? (
                         <Image
-                          src={attachment.url}
+                          src={attachment.thumbnailUrl || attachment.url}
                           alt={`Attachment ${index + 1}`}
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -764,14 +759,9 @@ export function PaymentForm({
                   )}
                 </label>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Add photos of receipts, invoices, or other relevant documents
-              </p>
             </div>
           </div>
-        </div>
-
-        <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 mt-4">
+        </div>        <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4 mt-4">
           {error && (
             <div className="text-sm text-red-500 text-center mb-4">{error}</div>
           )}
@@ -781,12 +771,11 @@ export function PaymentForm({
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {initialData ? "Update Payment" : "Create Payment"}
+              Save Changes
             </Button>
           </div>
         </div>
       </form>
-      <Toaster />
     </>
   );
 }

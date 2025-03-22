@@ -4,6 +4,8 @@ export type EndDateType = "forever" | "number" | "date";
 export interface Attachment {
   url: string;
   key: string;
+  thumbnailUrl?: string;
+  thumbnailKey?: string;
 }
 
 export interface Payment {

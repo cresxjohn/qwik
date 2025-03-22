@@ -210,17 +210,18 @@ export function PaymentInfo({
                     Attachments
                   </p>
                   <div className="grid grid-cols-2 gap-4">
-                    {payment.attachments.map((attachment, index) => (
+                    {(payment.attachments || []).map((attachment, index) => (
                       <ImageViewer
                         key={index}
-                        images={payment.attachments || []}
+                        images={(payment.attachments || []).map((a) => a.url)}
                         initialIndex={index}
                         trigger={
                           <div className="relative aspect-square rounded-lg border bg-muted overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
                             <Image
-                              src={attachment}
+                              src={attachment.thumbnailUrl || attachment.url}
                               alt={`Attachment ${index + 1}`}
                               fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                               className="object-cover"
                             />
                           </div>
