@@ -511,7 +511,7 @@ export const columns: ColumnDef<Transaction>[] = [
       <SortableHeader column={column}>Name</SortableHeader>
     ),
     cell: ({ row }) => {
-      return <div className="font-medium">{row.getValue("name")}</div>;
+      return <div>{row.getValue("name")}</div>;
     },
   },
   {
@@ -527,11 +527,7 @@ export const columns: ColumnDef<Transaction>[] = [
       }).format(amount);
 
       return (
-        <div
-          className={`font-medium ${
-            amount > 0 ? "text-green-500" : "text-red-500"
-          }`}
-        >
+        <div className={`${amount > 0 ? "text-green-500" : "text-red-500"}`}>
           {formatted}
         </div>
       );
@@ -550,7 +546,7 @@ export const columns: ColumnDef<Transaction>[] = [
       <SortableHeader column={column}>Account</SortableHeader>
     ),
     cell: ({ row }) => {
-      return <div className="font-medium">{row.getValue("account")}</div>;
+      return <div>{row.getValue("account")}</div>;
     },
     filterFn: (row, id, value: string[]) => {
       return value.includes(row.getValue(id));
@@ -563,9 +559,7 @@ export const columns: ColumnDef<Transaction>[] = [
     ),
     cell: ({ row }) => {
       const date = new Date(row.getValue("paymentDate") as string);
-      return (
-        <div className="font-medium">{dayjs(date).format("MMM D, YYYY")}</div>
-      );
+      return <div>{dayjs(date).format("MMM D, YYYY")}</div>;
     },
     filterFn: (row, id, value: DateRange | undefined) => {
       if (!value?.from) return true;
@@ -584,7 +578,7 @@ export const columns: ColumnDef<Transaction>[] = [
       <SortableHeader column={column}>Category</SortableHeader>
     ),
     cell: ({ row }) => {
-      return <div className="font-medium">{row.getValue("category")}</div>;
+      return <div>{row.getValue("category")}</div>;
     },
     filterFn: (row, id, value: string[]) => {
       return value.includes(row.getValue(id));
@@ -739,7 +733,7 @@ export function TransactionsTable({ data }: TransactionsTableProps) {
             }
             if (column.id === "tags") {
               // Join tags with underscore
-              return (value as string[]).join("_");
+              return (value as string[]).join(";");
             }
             return value;
           })
