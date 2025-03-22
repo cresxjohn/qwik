@@ -28,3 +28,18 @@ export interface Payment {
   notes?: string;
   attachments?: Attachment[];
 }
+
+export interface Account {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+  creditLimit?: number | null;
+  remainingCreditLimit?: number | null;
+  onHoldAmount: number;
+  statementDate?: number | null;
+  daysDueAfterStatementDate?: number | null;
+  annualFee?: number | null;
+  afWaiverSpendingRequirement?: number | null;
+  excludeFromBalances: boolean;
+}

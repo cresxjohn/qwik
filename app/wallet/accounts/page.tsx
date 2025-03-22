@@ -148,56 +148,54 @@ const columns: ColumnDef<Account>[] = [
 
 export default function Page() {
   return (
-    <>
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/wallet">Wallet</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Accounts</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="px-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-bold mb-1">Accounts</p>
-              <p className="text-sm font-light">Manage your accounts.</p>
-            </div>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Account
-            </Button>
-          </div>
-          <RichTable
-            data={mockAccounts}
-            columns={columns}
-            enableSelection={true}
-            searchPlaceholder="Search accounts..."
-            searchColumn="name"
-            columnNameMapping={{
-              afWaiverSpendingRequirement: "AF Waiver Requirement",
-              daysDueAfterStatementDate: "Days Due",
-            }}
-            defaultColumnVisibility={{
-              statementDate: false,
-              daysDueAfterStatementDate: false,
-              annualFee: false,
-              afWaiverSpendingRequirement: false,
-              excludeFromBalances: false,
-            }}
-          />
+    <SidebarInset>
+      <header className="flex h-16 shrink-0 items-center gap-2">
+        <div className="flex items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/wallet">Wallet</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Accounts</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
-      </SidebarInset>
-    </>
+      </header>
+      <div className="px-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-2xl font-bold mb-1">Accounts</p>
+            <p className="text-sm font-light">Manage your accounts.</p>
+          </div>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Account
+          </Button>
+        </div>
+        <RichTable
+          data={mockAccounts}
+          columns={columns}
+          enableSelection={true}
+          searchPlaceholder="Search accounts..."
+          searchColumn="name"
+          columnNameMapping={{
+            afWaiverSpendingRequirement: "AF Waiver Requirement",
+            daysDueAfterStatementDate: "Days Due",
+          }}
+          defaultColumnVisibility={{
+            statementDate: false,
+            daysDueAfterStatementDate: false,
+            annualFee: false,
+            afWaiverSpendingRequirement: false,
+            excludeFromBalances: false,
+          }}
+        />
+      </div>
+    </SidebarInset>
   );
 }
