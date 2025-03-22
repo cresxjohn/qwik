@@ -14,9 +14,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Reminder, ReminderType } from "@/shared/types";
+import { Reminder } from "@/shared/types";
 import { Bell, Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
+import { X } from "lucide-react";
 
 interface ReminderSelectProps {
   value: Reminder[];
