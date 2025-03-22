@@ -549,6 +549,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
               onChange={(event) =>
                 table.getColumn("name")?.setFilterValue(event.target.value)
               }
+              className="max-w-md"
             />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">

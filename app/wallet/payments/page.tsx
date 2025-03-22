@@ -19,18 +19,23 @@ import {
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { RootState } from "@/store/store";
 import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { PaymentForm } from "./payment-form";
 import { PaymentsTable } from "./payments-table";
 import { Payment } from "@/shared/types";
 import { ImportSheet } from "./import-sheet";
+import { PaymentSummary } from "./payment-summary";
+import { GroupedPayments } from "./grouped-payments";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { deletePayment } from "@/store/slices/paymentsSlice";
 
 export default function PaymentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | undefined>();
   const payments = useSelector((state: RootState) => state.payments.items);
+  const dispatch = useDispatch();
 
   const handleCreateSuccess = () => {
     setIsCreateOpen(false);
@@ -40,6 +45,11 @@ export default function PaymentsPage() {
   const handleEditSuccess = () => {
     setEditingPayment(undefined);
     toast.success("Payment updated successfully");
+  };
+
+  const handleDelete = (id: string) => {
+    dispatch(deletePayment(id));
+    toast.success("Payment deleted successfully");
   };
 
   return (
@@ -89,10 +99,27 @@ export default function PaymentsPage() {
           </div>
         </div>
 
-        <PaymentsTable
-          payments={payments}
-          onEdit={(payment) => setEditingPayment(payment)}
-        />
+        <PaymentSummary payments={payments} />
+
+        <Tabs defaultValue="grouped" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="grouped">Grouped View</TabsTrigger>
+            <TabsTrigger value="table">Table View</TabsTrigger>
+          </TabsList>
+          <TabsContent value="grouped" className="space-y-4">
+            <GroupedPayments
+              payments={payments}
+              onEdit={setEditingPayment}
+              onDelete={handleDelete}
+            />
+          </TabsContent>
+          <TabsContent value="table" className="space-y-4">
+            <PaymentsTable
+              payments={payments}
+              onEdit={(payment) => setEditingPayment(payment)}
+            />
+          </TabsContent>
+        </Tabs>
 
         <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
