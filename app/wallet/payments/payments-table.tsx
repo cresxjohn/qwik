@@ -62,6 +62,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const SortableHeader = ({
   column,
@@ -188,6 +189,29 @@ const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
 
 export const columns: ColumnDef<Payment>[] = [
   {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(event) => event.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
     accessorKey: "name",
     header: ({ column }) => (
       <SortableHeader column={column}>Name</SortableHeader>
@@ -203,6 +227,7 @@ export const columns: ColumnDef<Payment>[] = [
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground"
+              onClick={(event) => event.stopPropagation()}
             >
               <ExternalLink className="h-4 w-4" />
             </a>
@@ -426,9 +451,78 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
     },
   });
 
+  const handleExport = () => {
+    // Get visible columns
+    const visibleColumns = table
+      .getAllColumns()
+      .filter((column) => column.getIsVisible());
+
+    // Get rows to export (either selected rows or all filtered rows)
+    const rowsToExport =
+      table.getFilteredSelectedRowModel().rows.length > 0
+        ? table.getFilteredSelectedRowModel().rows
+        : table.getFilteredRowModel().rows;
+
+    // Create CSV header
+    const headers = visibleColumns
+      .filter((column) => !["select", "actions"].includes(column.id)) // Exclude select column
+      .map((column) => formatColumnName(column.id));
+
+    // Create CSV rows
+    const csvData = rowsToExport.map((row) => {
+      return (
+        visibleColumns
+          .filter((column) => !["select", "actions"].includes(column.id)) // Exclude select column
+          .map((column) => {
+            const value = row.getValue(column.id);
+
+            // Format special values
+            if (column.id === "amount") {
+              // Remove currency symbol and commas, keep only the number with 2 decimal places
+              return Number(value).toFixed(2);
+            }
+            if (["startDate", "endDate", "nextDueDate"].includes(column.id)) {
+              return dayjs(value as Date).format("YYYY-MM-DD");
+            }
+            if (column.id === "tags") {
+              // Join tags with underscore
+              return (value as string[]).join(";");
+            }
+            return value;
+          })
+          // Escape any fields containing commas with quotes
+          .map((value) => {
+            if (typeof value === "string" && value.includes(",")) {
+              return `"${value}"`;
+            }
+            return value;
+          })
+      );
+    });
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map((row) => row.join(",")),
+    ].join("\n");
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `payments_${dayjs().format("YYYY-MM-DD")}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex items-center justify-between py-4">
         <Input
           placeholder="Filter payments..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -437,32 +531,44 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
           }
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {formatColumnName(column.id)}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {formatColumnName(column.id)}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="outline" onClick={handleExport}>
+            Export CSV
+            {table.getFilteredSelectedRowModel().rows.length > 0 && (
+              <Badge variant="secondary" className="ml-2 rounded-sm px-1">
+                {table.getFilteredSelectedRowModel().rows.length} selected
+              </Badge>
+            )}
+          </Button>
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
@@ -520,6 +626,10 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         </Table>
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="text-muted-foreground flex-1 text-sm">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
         <div className={columns.length > 0 ? "space-x-2" : "ml-auto space-x-2"}>
           <Button
             variant="outline"
