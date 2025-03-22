@@ -4,12 +4,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "qwikfinx.s3.ap-southeast-1.amazonaws.com",
-        pathname: "/attachments/**",
-      },
-      {
-        protocol: "https",
-        hostname: "qwikfinx-dev.s3.ap-southeast-1.amazonaws.com",
+        hostname: `${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`,
         pathname: "/attachments/**",
       },
     ],
