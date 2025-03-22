@@ -22,8 +22,15 @@ import {
 import { Payment } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
 import dayjs from "dayjs";
-import { CalendarIcon, CreditCard, Link as LinkIcon, Tag } from "lucide-react";
+import {
+  CalendarIcon,
+  CreditCard,
+  Link as LinkIcon,
+  Tag,
+  Bell,
+} from "lucide-react";
 import Image from "next/image";
+import { ReminderSelect } from "./reminder-select";
 
 interface PaymentInfoProps {
   payment: Payment | null;
@@ -159,6 +166,22 @@ export function PaymentInfo({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Additional Information</h3>
             <div className="space-y-4">
+              {payment.reminders && payment.reminders.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Bell className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Reminders
+                    </p>
+                    <ReminderSelect
+                      value={payment.reminders}
+                      onChange={() => {}}
+                      disabled
+                    />
+                  </div>
+                </div>
+              )}
+
               {payment.link && (
                 <div className="flex items-start gap-3">
                   <LinkIcon className="h-5 w-5 text-muted-foreground mt-1" />

@@ -19,7 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Frequency, Payment } from "@/shared/types";
+import { Frequency, Payment, Reminder } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
 import dayjs from "dayjs";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
@@ -39,6 +39,25 @@ const REQUIRED_FIELDS = [
   "startDate",
 ] as const;
 
+const parseReminders = (remindersStr: string): Reminder[] => {
+  if (!remindersStr) return [];
+
+  const reminderCodes = remindersStr.split(";").map((r) => r.trim());
+  return reminderCodes
+    .map((code) => {
+      if (code === "onDay") {
+        return { type: "onDay", days: 0 };
+      }
+      const match = code.match(/^before(\d+)$/);
+      if (match) {
+        const days = parseInt(match[1]);
+        return { type: "before", days };
+      }
+      return null;
+    })
+    .filter((r): r is Reminder => r !== null);
+};
+
 export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
@@ -50,10 +69,10 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
 
   const handleDownloadTemplate = () => {
     const template = [
-      "name,amount,account,category,startDate,frequency,toAccount,tags,link,endDateType,endDate,numberOfEvents,notes",
-      "Netflix,399.00,Checking,Subscriptions,2024-03-22,monthly,,entertainment;streaming,https://netflix.com,forever,,,Monthly streaming subscription",
-      "Gym Membership,1149.99,Checking,Memberships,2024-03-22,monthly,,health;fitness,https://gym.com,numberOfEvents,,12,Monthly gym membership for 1 year",
-      "Electricity Bill,1290.50,Checking,Utilities,2024-03-22,,,bills;utilities,https://electricity.com,date,2024-04-22,,One-time bill payment",
+      "name,amount,account,category,startDate,frequency,toAccount,tags,link,endDateType,endDate,numberOfEvents,notes,reminders",
+      "Netflix,399.00,Checking,Subscriptions,2024-03-22,monthly,,entertainment;streaming,https://netflix.com,forever,,,Monthly streaming subscription,onDay;before1;before7",
+      "Gym Membership,1149.99,Checking,Memberships,2024-03-22,monthly,,health;fitness,https://gym.com,numberOfEvents,,12,Monthly gym membership for 1 year,before7",
+      "Electricity Bill,1290.50,Checking,Utilities,2024-03-22,,,bills;utilities,https://electricity.com,date,2024-04-22,,One-time bill payment,onDay",
     ].join("\n");
 
     const blob = new Blob([template], { type: "text/csv" });
@@ -160,6 +179,21 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
             }
             break;
         }
+      }
+    }
+
+    if (row.reminders) {
+      const reminders = parseReminders(row.reminders);
+      if (
+        reminders.some(
+          (r) => r.type === "before" && (r.days < 1 || r.days > 365)
+        )
+      ) {
+        errors.push(
+          `Row ${
+            index + 1
+          }: reminder days must be between 1 and 365 for "before" type`
+        );
       }
     }
 
@@ -356,7 +390,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
               }
             }
 
-            validPayments.push({
+            const payment: Payment = {
               id: uuidv4(),
               name: rowData.name,
               amount: Number(rowData.amount),
@@ -375,7 +409,10 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
               paymentDate: startDate,
               lastPaymentDate: startDate,
               nextDueDate: startDate,
-            });
+              reminders: parseReminders(rowData.reminders),
+            };
+
+            validPayments.push(payment);
           });
         }
 
@@ -786,11 +823,14 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                         </div>
                         <div>
                           <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                            notes
+                            reminders
                           </code>
                           <p className="text-muted-foreground text-xs mt-1">
-                            Add any extra details you want to remember about
-                            this payment
+                            Add multiple reminders using semicolons. Use
+                            &quot;onDay&quot; for day-of reminders, or
+                            &quot;beforeX&quot; where X is the number of days
+                            before (e.g., &quot;before7&quot; for 7 days
+                            before). Example: &quot;onDay;before1;before7&quot;
                           </p>
                         </div>
                       </div>

@@ -7,6 +7,13 @@ export type Frequency =
 
 export type PaymentType = "income" | "expense" | "transfer";
 
+export type ReminderType = "onDay" | "before";
+
+export interface Reminder {
+  type: ReminderType;
+  days: number; // 0 for onDay, positive number for before
+}
+
 export interface Payment {
   id: string;
   name: string;
@@ -26,6 +33,7 @@ export interface Payment {
   nextDueDate: string;
   category: string;
   tags: string[];
+  reminders: Reminder[]; // New field for reminders
 }
 
 export type EndDateType = "forever" | "number" | "date";

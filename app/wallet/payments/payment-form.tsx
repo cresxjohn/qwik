@@ -19,7 +19,14 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Attachment, EndDateType, Payment, PaymentType } from "@/shared/types";
+import {
+  Attachment,
+  EndDateType,
+  Frequency,
+  Payment,
+  PaymentType,
+  Reminder,
+} from "@/shared/types";
 import { getFrequencyUnit } from "@/shared/utils";
 import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
@@ -29,6 +36,7 @@ import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { ReminderSelect } from "./reminder-select";
 
 const frequencies = [
   { value: "weekly", label: "Weekly" },
@@ -58,6 +66,7 @@ interface FormData {
   endDate: Date | undefined;
   notes: string;
   attachments: Attachment[];
+  reminders: Reminder[];
 }
 
 export function PaymentForm({
@@ -132,6 +141,7 @@ export function PaymentForm({
       endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
       notes: initialData?.notes ?? "",
       attachments,
+      reminders: initialData?.reminders ?? [],
     };
   });
 
@@ -275,59 +285,53 @@ export function PaymentForm({
       }
 
       const amount = parseFloat(formData.amount);
-      const paymentData: Payment = {
-        id: initialData?.id ?? uuidv4(),
+      if (isNaN(amount)) {
+        throw new Error("Please enter a valid amount");
+      }
+
+      const endDate = calculateEndDate();
+      if (isRecurring && endDateType === "number" && !formData.numberOfEvents) {
+        throw new Error("Please enter the number of events");
+      }
+
+      const payment: Payment = {
+        id: initialData?.id || uuidv4(),
         name: formData.name,
-        amount:
-          paymentType === "expense" ? -Math.abs(amount) : Math.abs(amount),
+        amount,
         account: formData.account,
-        toAccount: paymentType === "transfer" ? formData.toAccount : undefined,
+        toAccount: formData.toAccount || undefined,
         paymentType,
         category: formData.category,
         tags: formData.tags,
-        recurring: isRecurring,
-        frequency: formData.frequency as Payment["frequency"],
-        link: formData.link ?? undefined,
-        startDate: formData.startDate
-          ? dayjs(formData.startDate).toISOString()
-          : dayjs().toISOString(),
-        lastPaymentDate:
-          initialData?.lastPaymentDate ??
-          (formData.startDate
-            ? dayjs(formData.startDate).toISOString()
-            : dayjs().toISOString()),
-        nextDueDate:
-          initialData?.nextDueDate ??
-          (formData.startDate
-            ? dayjs(formData.startDate).toISOString()
-            : dayjs().toISOString()),
-        paymentDate:
-          initialData?.paymentDate ??
-          (formData.startDate
-            ? dayjs(formData.startDate).format("YYYY-MM-DD")
-            : dayjs().format("YYYY-MM-DD")),
-        endDate: isRecurring
-          ? (() => {
-              const endDate = calculateEndDate();
-              return endDate ? dayjs(endDate).toISOString() : undefined;
-            })()
-          : undefined,
+        link: formData.link || undefined,
         notes: formData.notes || undefined,
-        attachments:
-          formData.attachments.length > 0
-            ? formData.attachments.map((attachment) => attachment.url)
-            : undefined,
+        attachments: formData.attachments.map((a) => a.url),
+        recurring: isRecurring,
+        frequency: isRecurring ? (formData.frequency as Frequency) : undefined,
+        startDate:
+          formData.startDate?.toISOString() || new Date().toISOString(),
+        endDate: endDateType === "forever" ? undefined : endDate?.toISOString(),
+        paymentDate:
+          formData.startDate?.toISOString() || new Date().toISOString(),
+        lastPaymentDate:
+          formData.startDate?.toISOString() || new Date().toISOString(),
+        nextDueDate:
+          formData.startDate?.toISOString() || new Date().toISOString(),
+        reminders: formData.reminders,
       };
 
       if (initialData) {
-        dispatch(updatePayment(paymentData));
+        dispatch(updatePayment(payment));
       } else {
-        dispatch(addPayment(paymentData));
+        dispatch(addPayment(payment));
       }
+
       onSuccess();
-    } catch (err) {
-      console.error("Error saving payment:", err);
-      setError(err instanceof Error ? err.message : "Failed to save payment");
+    } catch (error) {
+      console.error("Error saving payment:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to save payment"
+      );
     } finally {
       setLoading(false);
     }
@@ -762,6 +766,16 @@ export function PaymentForm({
                 )}
               </label>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Reminders</Label>
+            <ReminderSelect
+              value={formData.reminders}
+              onChange={(reminders) =>
+                setFormData((prev) => ({ ...prev, reminders }))
+              }
+            />
           </div>
         </div>
       </div>{" "}
