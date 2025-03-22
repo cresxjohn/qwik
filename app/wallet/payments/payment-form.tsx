@@ -20,7 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, Toaster } from "sonner";
-import { EndDateType, Payment, PaymentType } from "@/shared/types";
+import { EndDateType, Payment, PaymentType, Attachment } from "@/shared/types";
 import { getFrequencyUnit } from "@/shared/utils";
 import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
 import dayjs from "dayjs";
@@ -57,7 +57,7 @@ interface FormData {
   numberOfEvents: string;
   endDate: Date | undefined;
   notes: string;
-  attachments: string[]; // Store base64 strings
+  attachments: Attachment[];
 }
 
 export function PaymentForm({
@@ -130,9 +130,9 @@ export function PaymentForm({
   useEffect(() => {
     return () => {
       // Clean up any object URLs when component unmounts
-      formData.attachments.forEach((url) => {
-        if (url.startsWith("blob:")) {
-          URL.revokeObjectURL(url);
+      formData.attachments.forEach((attachment) => {
+        if (attachment.url.startsWith("blob:")) {
+          URL.revokeObjectURL(attachment.url);
         }
       });
     };
@@ -175,61 +175,37 @@ export function PaymentForm({
     return endDate;
   };
 
-  const compressImage = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = document.createElement("img");
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-
-          // Calculate new dimensions while maintaining aspect ratio
-          const maxSize = 800; // Maximum dimension
-          if (width > height && width > maxSize) {
-            height = Math.round((height * maxSize) / width);
-            width = maxSize;
-          } else if (height > maxSize) {
-            width = Math.round((width * maxSize) / height);
-            height = maxSize;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            reject(new Error("Could not get canvas context"));
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Convert to base64 with reduced quality
-          const base64String = canvas.toDataURL("image/jpeg", 0.7); // 0.7 = 70% quality
-          resolve(base64String);
-        };
-        img.onerror = reject;
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
     try {
       setLoading(true);
-      const compressedImages = await Promise.all(
+      const uploadResults = await Promise.all(
         files.map(async (file) => {
           try {
-            return await compressImage(file);
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(
+                data.details || data.error || "Failed to upload file"
+              );
+            }
+
+            return {
+              url: data.url,
+              key: data.key,
+            };
           } catch (error) {
-            console.error("Error compressing file:", error);
+            console.error("Error uploading file:", error);
             throw error;
           }
         })
@@ -237,11 +213,21 @@ export function PaymentForm({
 
       setFormData((prev) => ({
         ...prev,
-        attachments: [...prev.attachments, ...compressedImages],
+        attachments: [
+          ...prev.attachments,
+          ...uploadResults.map((result) => ({
+            url: result.url,
+            key: result.key,
+          })),
+        ],
       }));
     } catch (error) {
       console.error("Error processing attachments:", error);
-      toast.error("Failed to process attachments. Please try again.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to upload attachments. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -715,9 +701,9 @@ export function PaymentForm({
                     className="text-destructive hover:text-destructive hover:bg-destructive/5"
                     onClick={() => {
                       // Revoke all image URLs
-                      formData.attachments.forEach((url) => {
-                        if (url.startsWith("blob:")) {
-                          URL.revokeObjectURL(url);
+                      formData.attachments.forEach((attachment) => {
+                        if (attachment.url.startsWith("blob:")) {
+                          URL.revokeObjectURL(attachment.url);
                         }
                       });
                       setFormData((prev) => ({
@@ -731,14 +717,18 @@ export function PaymentForm({
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {formData.attachments.map((base64String, index) => (
+                {formData.attachments.map((attachment, index) => (
                   <div key={`attachment-${index}`} className="relative group">
                     <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
-                      {base64String.startsWith("data:image/") ? (
-                        <img
-                          src={base64String}
+                      {attachment.url.startsWith("data:image/") ||
+                      attachment.url.startsWith("https://") ? (
+                        <Image
+                          src={attachment.url}
                           alt={`Attachment ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover"
+                          unoptimized={attachment.url.startsWith("data:image/")}
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center p-4">
