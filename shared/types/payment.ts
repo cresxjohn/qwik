@@ -29,3 +29,10 @@ export interface Payment {
 }
 
 export type EndDateType = "forever" | "number" | "date";
+
+export type Attachment = {
+  url: string;
+  key: string;
+  thumbnailUrl?: string;
+  thumbnailKey?: string;
+};
