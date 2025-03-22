@@ -1,6 +1,5 @@
 "use client";
 
-import { toast } from "sonner";
 import { Payment } from "@/shared/types";
 import { deletePayment } from "@/store/slices/paymentsSlice";
 import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
@@ -21,7 +20,6 @@ import dayjs from "dayjs";
 import {
   ArrowDown,
   ArrowUp,
-  ChevronDown,
   ExternalLink,
   MoreHorizontal,
   RefreshCw,
@@ -29,6 +27,7 @@ import {
 import * as React from "react";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 import { PaymentInfo } from "./payment-info";
 
 import {
@@ -44,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -62,7 +62,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const SortableHeader = ({
   column,
