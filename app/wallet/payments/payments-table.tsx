@@ -1,9 +1,8 @@
 "use client";
 
 import { Payment } from "@/shared/types";
-import { deletePayment } from "@/store/slices/paymentsSlice";
-import { updatePaymentsTableColumnVisibility } from "@/store/slices/settingsSlice";
-import { RootState } from "@/store/store";
+import { usePaymentsStore } from "@/store/paymentsStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -26,7 +25,6 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { PaymentInfo } from "./payment-info";
 
@@ -194,10 +192,8 @@ const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
 };
 
 export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
-  const dispatch = useDispatch();
-  const columnVisibility = useSelector(
-    (state: RootState) => state.settings.paymentsTableColumnVisibility
-  );
+  const paymentsStore = usePaymentsStore();
+  const settingsStore = useSettingsStore();
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isInfoSheetOpen, setIsInfoSheetOpen] = useState(false);
 
@@ -209,10 +205,10 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
 
   const handleDelete = React.useCallback(
     (id: string) => {
-      dispatch(deletePayment(id));
+      paymentsStore.deletePayment(id);
       toast.success("Payment deleted successfully");
     },
-    [dispatch]
+    [paymentsStore]
   );
 
   const columns = React.useMemo<ColumnDef<Payment>[]>(
@@ -446,14 +442,16 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: (updater) => {
       const newVisibility =
-        typeof updater === "function" ? updater(columnVisibility) : updater;
-      dispatch(updatePaymentsTableColumnVisibility(newVisibility));
+        typeof updater === "function"
+          ? updater(settingsStore.paymentsTableColumnVisibility)
+          : updater;
+      settingsStore.updatePaymentsTableColumnVisibility(newVisibility);
     },
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
-      columnVisibility,
+      columnVisibility: settingsStore.paymentsTableColumnVisibility,
       rowSelection,
     },
     meta: {

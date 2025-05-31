@@ -21,12 +21,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Attachment, EndDateType, Payment, PaymentType } from "@/shared/types";
 import { getFrequencyUnit } from "@/shared/utils";
-import { addPayment, updatePayment } from "@/store/slices/paymentsSlice";
+import { usePaymentsStore } from "@/store/paymentsStore";
 import dayjs from "dayjs";
 import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -65,7 +64,7 @@ export function PaymentForm({
   onCancel,
   initialData,
 }: PaymentFormProps) {
-  const dispatch = useDispatch();
+  const { addPayment, updatePayment } = usePaymentsStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(
@@ -320,9 +319,9 @@ export function PaymentForm({
       };
 
       if (initialData) {
-        dispatch(updatePayment(paymentData));
+        updatePayment(paymentData);
       } else {
-        dispatch(addPayment(paymentData));
+        addPayment(paymentData);
       }
       onSuccess();
     } catch (err) {

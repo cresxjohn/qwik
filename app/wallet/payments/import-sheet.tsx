@@ -9,8 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useDispatch } from "react-redux";
-import { addPayment } from "@/store/slices/paymentsSlice";
+import { usePaymentsStore } from "@/store/paymentsStore";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -40,7 +39,7 @@ const REQUIRED_FIELDS = [
 ] as const;
 
 export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
-  const dispatch = useDispatch();
+  const { addPayment } = usePaymentsStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -416,7 +415,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
         const chunk = previewData.slice(i, i + chunkSize);
 
         chunk.forEach((payment) => {
-          dispatch(addPayment(payment));
+          addPayment(payment);
           imported++;
         });
 

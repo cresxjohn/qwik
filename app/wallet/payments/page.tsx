@@ -17,9 +17,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { RootState } from "@/store/store";
 import { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { usePaymentsStore } from "@/store/paymentsStore";
 import { toast } from "sonner";
 import { PaymentForm } from "./payment-form";
 import { PaymentsTable } from "./payments-table";
@@ -28,14 +27,12 @@ import { ImportSheet } from "./import-sheet";
 import { PaymentSummary } from "./payment-summary";
 import { GroupedPayments } from "./grouped-payments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { deletePayment } from "@/store/slices/paymentsSlice";
 
 export default function PaymentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | undefined>();
-  const payments = useSelector((state: RootState) => state.payments.items);
-  const dispatch = useDispatch();
+  const { items: payments, deletePayment } = usePaymentsStore();
 
   const handleCreateSuccess = () => {
     setIsCreateOpen(false);
@@ -48,7 +45,7 @@ export default function PaymentsPage() {
   };
 
   const handleDelete = (id: string) => {
-    dispatch(deletePayment(id));
+    deletePayment(id);
     toast.success("Payment deleted successfully");
   };
 

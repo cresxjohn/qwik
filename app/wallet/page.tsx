@@ -11,8 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/store";
+import { useTransactionsStore } from "@/store/transactionsStore";
 import { Transaction } from "@/shared/types";
 import dayjs from "dayjs";
 import {
@@ -64,9 +63,7 @@ const formatCurrency = (amount: number) => {
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 export default function Page() {
-  const transactions = useSelector(
-    (state: RootState) => state.transactions.items
-  );
+  const { items: transactions } = useTransactionsStore();
   const [stats, setStats] = useState({
     totalBalance: 0,
     monthlyIncome: 0,
