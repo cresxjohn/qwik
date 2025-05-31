@@ -1,8 +1,8 @@
 "use client";
 
 import { Payment } from "@/shared/types";
-import { usePaymentsStore } from "@/store/paymentsStore";
-import { useSettingsStore } from "@/store/settingsStore";
+import { usePaymentsStore } from "@/store/payments";
+import { useSettingsStore } from "@/store/settings";
 import {
   ColumnDef,
   ColumnFiltersState,

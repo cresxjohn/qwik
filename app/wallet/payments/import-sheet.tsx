@@ -9,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { usePaymentsStore } from "@/store/paymentsStore";
+import { usePaymentsStore } from "@/store/payments";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import {

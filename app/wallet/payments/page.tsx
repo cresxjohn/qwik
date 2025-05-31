@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useState } from "react";
-import { usePaymentsStore } from "@/store/paymentsStore";
+import { usePaymentsStore } from "@/store/payments";
 import { toast } from "sonner";
 import { PaymentForm } from "./payment-form";
 import { PaymentsTable } from "./payments-table";

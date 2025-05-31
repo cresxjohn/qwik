@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { useTransactionsStore } from "@/store/transactionsStore";
+import { useTransactionsStore } from "@/store/transactions";
 import { Transaction } from "@/shared/types";
 import dayjs from "dayjs";
 import {

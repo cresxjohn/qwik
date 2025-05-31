@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Attachment, EndDateType, Payment, PaymentType } from "@/shared/types";
 import { getFrequencyUnit } from "@/shared/utils";
-import { usePaymentsStore } from "@/store/paymentsStore";
+import { usePaymentsStore } from "@/store/payments";
 import dayjs from "dayjs";
 import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
 import Image from "next/image";
