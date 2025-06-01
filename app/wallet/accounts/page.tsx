@@ -24,7 +24,7 @@ import { AccountForm } from "./account-form";
 import { AccountSummary } from "./account-summary";
 import { ImportSheet } from "./import-sheet";
 import { LayoutGrid, Table } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AccountType, Account } from "@/shared/types";
 import { toast } from "sonner";
 import { useAccountsStore } from "@/store/accounts";
@@ -32,6 +32,9 @@ import { useAccountsStore } from "@/store/accounts";
 export default function Page() {
   const {
     items: accounts,
+    loading,
+    error,
+    loadAccounts,
     addAccount,
     updateAccount,
     deleteAccount,
@@ -42,6 +45,18 @@ export default function Page() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
+
+  // Load accounts on component mount
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   // Filter accounts based on selected type
   const filteredAccounts =
@@ -73,41 +88,78 @@ export default function Page() {
     toast.success("Account updated successfully");
   };
 
-  const handleDelete = (id: string) => {
-    deleteAccount(id);
-    toast.success("Account deleted successfully");
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAccount(id);
+      toast.success("Account deleted successfully");
+    } catch {
+      toast.error("Failed to delete account");
+    }
   };
 
-  const handleCreateAccount = (
+  const handleCreateAccount = async (
     accountData: Omit<Account, "id" | "remainingCreditLimit">
   ) => {
-    const newAccount: Account = {
-      ...accountData,
-      id: crypto.randomUUID(),
-      remainingCreditLimit: accountData.creditLimit
-        ? accountData.creditLimit +
-          accountData.balance -
-          accountData.onHoldAmount
-        : null,
-    };
-    addAccount(newAccount);
+    try {
+      await addAccount(accountData);
+      handleCreateSuccess();
+    } catch {
+      toast.error("Failed to create account");
+    }
   };
 
-  const handleUpdateAccount = (
+  const handleUpdateAccount = async (
     accountData: Omit<Account, "id" | "remainingCreditLimit">
   ) => {
     if (!editingAccount) return;
-    const updatedAccount: Account = {
-      ...accountData,
-      id: editingAccount.id,
-      remainingCreditLimit: accountData.creditLimit
-        ? accountData.creditLimit +
-          accountData.balance -
-          accountData.onHoldAmount
-        : null,
-    };
-    updateAccount(updatedAccount);
+
+    try {
+      const updatedAccount: Account = {
+        ...accountData,
+        id: editingAccount.id,
+        remainingCreditLimit: accountData.creditLimit
+          ? accountData.creditLimit +
+            accountData.balance -
+            accountData.onHoldAmount
+          : null,
+      };
+      await updateAccount(updatedAccount);
+      handleEditSuccess();
+    } catch {
+      toast.error("Failed to update account");
+    }
   };
+
+  // Show loading state
+  if (loading && accounts.length === 0) {
+    return (
+      <SidebarInset>
+        <header className="sticky top-0 z-10 bg-background sm:rounded-4xl flex h-16 shrink-0 items-center gap-2">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/wallet">Wallet</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Accounts</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading accounts...</p>
+          </div>
+        </div>
+      </SidebarInset>
+    );
+  }
 
   return (
     <SidebarInset>

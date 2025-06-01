@@ -32,7 +32,6 @@ const accountTypes: { value: AccountType; label: string }[] = [
 ];
 
 export function AccountForm({
-  onSuccess,
   onCancel,
   initialData,
   onSubmit,
@@ -92,8 +91,7 @@ export function AccountForm({
         excludeFromBalances: formData.excludeFromBalances,
       };
 
-      onSubmit(accountData);
-      onSuccess();
+      await onSubmit(accountData);
     } catch (error) {
       console.error("Failed to save account:", error);
       toast.error("Failed to save account");

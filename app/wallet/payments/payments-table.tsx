@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { PaymentInfo } from "./payment-info";
 
 import {
@@ -206,7 +205,6 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
   const handleDelete = React.useCallback(
     (id: string) => {
       paymentsStore.deletePayment(id);
-      toast.success("Payment deleted successfully");
     },
     [paymentsStore]
   );

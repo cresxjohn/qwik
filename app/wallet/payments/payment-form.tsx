@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -59,11 +58,7 @@ interface FormData {
   attachments: Attachment[];
 }
 
-export function PaymentForm({
-  onSuccess,
-  onCancel,
-  initialData,
-}: PaymentFormProps) {
+export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
   const { addPayment, updatePayment } = usePaymentsStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -323,7 +318,6 @@ export function PaymentForm({
       } else {
         addPayment(paymentData);
       }
-      onSuccess();
     } catch (err) {
       console.error("Error saving payment:", err);
       setError(err instanceof Error ? err.message : "Failed to save payment");

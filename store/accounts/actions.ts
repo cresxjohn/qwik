@@ -1,7 +1,7 @@
 import { StateCreator } from "zustand";
 import { Account } from "@/shared/types";
 import { AccountsStore } from "./types";
-import { mockAccounts } from "@/shared/mock";
+import { AccountsAPI } from "@/lib/api/accounts";
 
 export const createAccountsActions: StateCreator<
   AccountsStore,
@@ -9,27 +9,107 @@ export const createAccountsActions: StateCreator<
   [],
   AccountsStore
 > = (set) => ({
-  items: mockAccounts,
+  items: [],
   loading: false,
   error: null,
 
-  addAccount: (account: Account) =>
+  // Load accounts from API
+  loadAccounts: async () => {
     set((state) => {
-      state.items.push(account);
-    }),
+      state.loading = true;
+      state.error = null;
+    });
 
-  updateAccount: (account: Account) =>
-    set((state) => {
-      const index = state.items.findIndex((a) => a.id === account.id);
-      if (index !== -1) {
-        state.items[index] = account;
-      }
-    }),
+    try {
+      const accounts = await AccountsAPI.getAccounts();
+      set((state) => {
+        state.items = accounts;
+        state.loading = false;
+      });
+    } catch (error) {
+      set((state) => {
+        state.error =
+          error instanceof Error ? error.message : "Failed to load accounts";
+        state.loading = false;
+      });
+    }
+  },
 
-  deleteAccount: (id: string) =>
+  addAccount: async (
+    accountData: Omit<Account, "id" | "remainingCreditLimit">
+  ) => {
     set((state) => {
-      state.items = state.items.filter((a) => a.id !== id);
-    }),
+      state.loading = true;
+      state.error = null;
+    });
+
+    try {
+      const account = await AccountsAPI.createAccount(accountData);
+      set((state) => {
+        state.items.push(account);
+        state.loading = false;
+      });
+      return account;
+    } catch (error) {
+      set((state) => {
+        state.error =
+          error instanceof Error ? error.message : "Failed to create account";
+        state.loading = false;
+      });
+      throw error;
+    }
+  },
+
+  updateAccount: async (account: Account) => {
+    set((state) => {
+      state.loading = true;
+      state.error = null;
+    });
+
+    try {
+      const updatedAccount = await AccountsAPI.updateAccount(
+        account.id,
+        account
+      );
+      set((state) => {
+        const index = state.items.findIndex((a) => a.id === account.id);
+        if (index !== -1) {
+          state.items[index] = updatedAccount;
+        }
+        state.loading = false;
+      });
+      return updatedAccount;
+    } catch (error) {
+      set((state) => {
+        state.error =
+          error instanceof Error ? error.message : "Failed to update account";
+        state.loading = false;
+      });
+      throw error;
+    }
+  },
+
+  deleteAccount: async (id: string) => {
+    set((state) => {
+      state.loading = true;
+      state.error = null;
+    });
+
+    try {
+      await AccountsAPI.deleteAccount(id);
+      set((state) => {
+        state.items = state.items.filter((a) => a.id !== id);
+        state.loading = false;
+      });
+    } catch (error) {
+      set((state) => {
+        state.error =
+          error instanceof Error ? error.message : "Failed to delete account";
+        state.loading = false;
+      });
+      throw error;
+    }
+  },
 
   setAccounts: (accounts: Account[]) =>
     set((state) => {

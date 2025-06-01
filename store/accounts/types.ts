@@ -7,9 +7,12 @@ export interface AccountsState {
 }
 
 export interface AccountsActions {
-  addAccount: (account: Account) => void;
-  updateAccount: (account: Account) => void;
-  deleteAccount: (id: string) => void;
+  loadAccounts: () => Promise<void>;
+  addAccount: (
+    accountData: Omit<Account, "id" | "remainingCreditLimit">
+  ) => Promise<Account>;
+  updateAccount: (account: Account) => Promise<Account>;
+  deleteAccount: (id: string) => Promise<void>;
   setAccounts: (accounts: Account[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
