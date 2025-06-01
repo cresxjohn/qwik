@@ -33,7 +33,7 @@ export default function RootLayout({
   readonly children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="bg-sidebar">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
@@ -45,7 +45,7 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, maximum-scale=1"
         />
       </head>
-      <body>
+      <body className="bg-sidebar text-sidebar-foreground antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
