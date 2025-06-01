@@ -9,7 +9,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -22,20 +21,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountsCardView } from "./accounts-card-view";
 import { AccountsTable } from "./accounts-table";
 import { AccountForm } from "./account-form";
-import { formatCurrency } from "@/shared/utils";
-import {
-  PiggyBank,
-  CreditCard,
-  Banknote,
-  TrendingDown,
-  LayoutGrid,
-  Table,
-} from "lucide-react";
+import { AccountSummary } from "./account-summary";
+import { ImportSheet } from "./import-sheet";
+import { LayoutGrid, Table } from "lucide-react";
 import { useState } from "react";
 import type { AccountType, Account } from "@/shared/types";
 import { toast } from "sonner";
 import { useAccountsStore } from "@/store/accounts";
-import { ImportSheet } from "./import-sheet";
 
 export default function Page() {
   const {
@@ -50,37 +42,6 @@ export default function Page() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
-
-  // Calculate summary metrics
-  const totalBalance = accounts
-    .filter(
-      (account) =>
-        !account.excludeFromBalances &&
-        (account.type === "cash" || account.type === "savings")
-    )
-    .reduce((sum, account) => sum + account.balance, 0);
-
-  const totalLoanOutstanding = accounts
-    .filter(
-      (account) => !account.excludeFromBalances && account.type === "loan"
-    )
-    .reduce((sum, account) => sum + Math.abs(account.balance), 0);
-
-  const totalCreditBalances = accounts
-    .filter(
-      (account) =>
-        !account.excludeFromBalances &&
-        (account.type === "credit card" || account.type === "line of credit")
-    )
-    .reduce((sum, account) => sum + Math.abs(account.balance), 0);
-
-  const totalRemainingCredits = accounts
-    .filter(
-      (account) =>
-        !account.excludeFromBalances &&
-        (account.type === "credit card" || account.type === "line of credit")
-    )
-    .reduce((sum, account) => sum + (account.remainingCreditLimit || 0), 0);
 
   // Filter accounts based on selected type
   const filteredAccounts =
@@ -192,71 +153,7 @@ export default function Page() {
         </div>
 
         {/* Summary Widgets */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Balance
-              </CardTitle>
-              <PiggyBank className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(totalBalance)}
-              </div>
-              <p className="text-xs text-muted-foreground">Cash + Savings</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Loan Outstanding
-              </CardTitle>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(totalLoanOutstanding)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Total loan balances
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Credit Used</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(totalCreditBalances)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Credit cards + Lines of credit
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Available Credit
-              </CardTitle>
-              <Banknote className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(totalRemainingCredits)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Remaining credit limits
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <AccountSummary accounts={accounts} />
 
         <Tabs defaultValue="cards" className="space-y-4">
           <div className="flex justify-end">

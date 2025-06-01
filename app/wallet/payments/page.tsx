@@ -17,16 +17,17 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { useState } from "react";
-import { usePaymentsStore } from "@/store/payments";
-import { toast } from "sonner";
-import { PaymentForm } from "./payment-form";
-import { PaymentsTable } from "./payments-table";
-import { Payment } from "@/shared/types";
-import { ImportSheet } from "./import-sheet";
-import { PaymentSummary } from "./payment-summary";
-import { GroupedPayments } from "./grouped-payments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Payment } from "@/shared/types";
+import { usePaymentsStore } from "@/store/payments";
+import { LayoutGrid, Table } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { GroupedPayments } from "./grouped-payments";
+import { ImportSheet } from "./import-sheet";
+import { PaymentForm } from "./payment-form";
+import { PaymentSummary } from "./payment-summary";
+import { PaymentsTable } from "./payments-table";
 
 export default function PaymentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -69,28 +70,27 @@ export default function PaymentsPage() {
         </div>
       </header>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold">Payments</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage your one-time and recurring payments and subscriptions
-            </p>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold mb-1">Payments</p>
+              <p className="text-sm font-light">
+                Manage your one-time and recurring payments and subscriptions
+              </p>
+            </div>
+            {/* Buttons for larger screens */}
+            <div className="hidden sm:flex gap-2">
+              <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                Import
+              </Button>
+              <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsImportOpen(true)}
-              className="order-last md:order-first"
-            >
+          {/* Buttons for smaller screens */}
+          <div className="flex sm:hidden gap-2 my-4">
+            <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               Import
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setIsCreateOpen(true)}
-              className="order-first md:order-last"
-            >
-              Add Payment
             </Button>
           </div>
         </div>
@@ -98,10 +98,16 @@ export default function PaymentsPage() {
         <PaymentSummary payments={payments} />
 
         <Tabs defaultValue="grouped" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="grouped">Grouped View</TabsTrigger>
-            <TabsTrigger value="table">Table View</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-end">
+            <TabsList>
+              <TabsTrigger value="grouped">
+                <LayoutGrid className="h-4 w-4" />
+              </TabsTrigger>
+              <TabsTrigger value="table">
+                <Table className="h-4 w-4" />
+              </TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="grouped" className="space-y-4">
             <GroupedPayments
               payments={payments}
