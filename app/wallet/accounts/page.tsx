@@ -191,17 +191,21 @@ export default function Page() {
               }
               className="mb-10"
             >
-              <TabsList className="justify-start w-full overflow-x-auto scrollbar-hide">
-                {accountTypes.map((type) => (
-                  <TabsTrigger
-                    key={type}
-                    value={type}
-                    className="px-6 capitalize whitespace-nowrap flex-shrink-0"
-                  >
-                    {formatTabName(type)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              <div className="w-full overflow-hidden">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <TabsList className="inline-flex w-max min-w-full justify-start">
+                    {accountTypes.map((type) => (
+                      <TabsTrigger
+                        key={type}
+                        value={type}
+                        className="px-6 capitalize whitespace-nowrap flex-shrink-0"
+                      >
+                        {formatTabName(type)}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+              </div>
             </Tabs>
             <AccountsCardView accounts={filteredAccounts} />
           </TabsContent>
