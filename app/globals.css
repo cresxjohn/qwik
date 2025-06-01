@@ -123,10 +123,12 @@
 
   html {
     @apply bg-sidebar;
+    overscroll-behavior: none;
   }
 
   body {
     @apply bg-sidebar text-sidebar-foreground;
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    overscroll-behavior: none;
   }
 }
