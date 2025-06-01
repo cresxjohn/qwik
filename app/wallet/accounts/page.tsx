@@ -35,6 +35,7 @@ import { useState } from "react";
 import type { AccountType, Account } from "@/shared/types";
 import { toast } from "sonner";
 import { useAccountsStore } from "@/store/accounts";
+import { ImportSheet } from "./import-sheet";
 
 export default function Page() {
   const {
@@ -47,6 +48,7 @@ export default function Page() {
     AccountType | "all"
   >("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
 
   // Calculate summary metrics
@@ -166,12 +168,27 @@ export default function Page() {
         </div>
       </header>
       <div className="px-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold mb-1">Accounts</p>
-            <p className="text-sm font-light">Manage your accounts.</p>
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold mb-1">Accounts</p>
+              <p className="text-sm font-light">Manage your accounts.</p>
+            </div>
+            {/* Buttons for larger screens */}
+            <div className="hidden sm:flex gap-2">
+              <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                Import
+              </Button>
+              <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+            </div>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+          {/* Buttons for smaller screens */}
+          <div className="flex sm:hidden gap-2 my-4">
+            <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              Import
+            </Button>
+          </div>
         </div>
 
         {/* Summary Widgets */}
@@ -263,7 +280,7 @@ export default function Page() {
             >
               <div className="w-full overflow-hidden">
                 <div className="overflow-x-auto scrollbar-hide">
-                  <TabsList className="inline-flex w-max min-w-full justify-start">
+                  <TabsList className="inline-flex w-max min-w-full sm:w-fit sm:min-w-fit justify-start">
                     {accountTypes.map((type) => (
                       <TabsTrigger
                         key={type}
@@ -323,6 +340,9 @@ export default function Page() {
             />
           </SheetContent>
         </Sheet>
+
+        {/* Import Account Sheet */}
+        <ImportSheet open={isImportOpen} onOpenChange={setIsImportOpen} />
       </div>
     </SidebarInset>
   );
