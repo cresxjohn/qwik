@@ -229,29 +229,31 @@ export default function Page() {
             </div>
             <TabsContent value="cards" className="space-y-4">
               {/* Account Type Filter Tabs */}
-              <Tabs
-                value={selectedAccountType}
-                onValueChange={(value) =>
-                  setSelectedAccountType(value as AccountType | "all")
-                }
-                className="mb-10"
-              >
-                <div className="w-full overflow-hidden">
-                  <div className="overflow-x-auto scrollbar-hide">
-                    <TabsList className="inline-flex w-max min-w-full sm:w-fit sm:min-w-fit justify-start">
-                      {accountTypes.map((type) => (
-                        <TabsTrigger
-                          key={type}
-                          value={type}
-                          className="px-6 capitalize whitespace-nowrap flex-shrink-0"
-                        >
-                          {formatTabName(type)}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
+              {accountTypes.length > 2 && (
+                <Tabs
+                  value={selectedAccountType}
+                  onValueChange={(value) =>
+                    setSelectedAccountType(value as AccountType | "all")
+                  }
+                  className="mb-10"
+                >
+                  <div className="w-full overflow-hidden">
+                    <div className="overflow-x-auto scrollbar-hide">
+                      <TabsList className="inline-flex w-max min-w-full sm:w-fit sm:min-w-fit justify-start">
+                        {accountTypes.map((type) => (
+                          <TabsTrigger
+                            key={type}
+                            value={type}
+                            className="px-6 capitalize whitespace-nowrap flex-shrink-0"
+                          >
+                            {formatTabName(type)}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </div>
                   </div>
-                </div>
-              </Tabs>
+                </Tabs>
+              )}
               <AccountsCardView
                 accounts={filteredAccounts}
                 onEdit={setEditingAccount}
