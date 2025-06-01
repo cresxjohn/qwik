@@ -18,16 +18,17 @@ import {
 } from "@/components/ui/sheet";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AccountsCardView } from "./accounts-card-view";
-import { AccountsTable } from "./accounts-table";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
+import type { Account, AccountType } from "@/shared/types";
+import { useAccountsStore } from "@/store/accounts";
+import { LayoutGrid, Table } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AccountForm } from "./account-form";
 import { AccountSummary } from "./account-summary";
+import { AccountsCardView } from "./accounts-card-view";
+import { AccountsTable } from "./accounts-table";
 import { ImportSheet } from "./import-sheet";
-import { LayoutGrid, Table } from "lucide-react";
-import { useState, useEffect } from "react";
-import type { AccountType, Account } from "@/shared/types";
-import { toast } from "sonner";
-import { useAccountsStore } from "@/store/accounts";
 
 export default function Page() {
   const {
@@ -180,119 +181,126 @@ export default function Page() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-bold mb-1">Accounts</p>
-              <p className="text-sm font-light">Manage your accounts.</p>
+
+      <PullToRefresh
+        onRefresh={loadAccounts}
+        disabled={loading}
+        className="flex-1"
+      >
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold mb-1">Accounts</p>
+                <p className="text-sm font-light">Manage your accounts.</p>
+              </div>
+              {/* Buttons for larger screens */}
+              <div className="hidden sm:flex gap-2">
+                <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                  Import
+                </Button>
+                <Button onClick={() => setIsCreateOpen(true)}>
+                  Add Account
+                </Button>
+              </div>
             </div>
-            {/* Buttons for larger screens */}
-            <div className="hidden sm:flex gap-2">
+            {/* Buttons for smaller screens */}
+            <div className="flex sm:hidden gap-2 my-4">
+              <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
               <Button variant="outline" onClick={() => setIsImportOpen(true)}>
                 Import
               </Button>
-              <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
             </div>
           </div>
-          {/* Buttons for smaller screens */}
-          <div className="flex sm:hidden gap-2 my-4">
-            <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
-            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-              Import
-            </Button>
-          </div>
-        </div>
 
-        {/* Summary Widgets */}
-        <AccountSummary accounts={accounts} />
+          {/* Summary Widgets */}
+          <AccountSummary accounts={accounts} />
 
-        <Tabs defaultValue="cards" className="space-y-4">
-          <div className="flex justify-end">
-            <TabsList>
-              <TabsTrigger value="cards">
-                <LayoutGrid className="h-4 w-4" />
-              </TabsTrigger>
-              <TabsTrigger value="table">
-                <Table className="h-4 w-4" />
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="cards" className="space-y-4">
-            {/* Account Type Filter Tabs */}
-            <Tabs
-              value={selectedAccountType}
-              onValueChange={(value) =>
-                setSelectedAccountType(value as AccountType | "all")
-              }
-              className="mb-10"
-            >
-              <div className="w-full overflow-hidden">
-                <div className="overflow-x-auto scrollbar-hide">
-                  <TabsList className="inline-flex w-max min-w-full sm:w-fit sm:min-w-fit justify-start">
-                    {accountTypes.map((type) => (
-                      <TabsTrigger
-                        key={type}
-                        value={type}
-                        className="px-6 capitalize whitespace-nowrap flex-shrink-0"
-                      >
-                        {formatTabName(type)}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+          <Tabs defaultValue="cards" className="space-y-4">
+            <div className="flex justify-end">
+              <TabsList>
+                <TabsTrigger value="cards">
+                  <LayoutGrid className="h-4 w-4" />
+                </TabsTrigger>
+                <TabsTrigger value="table">
+                  <Table className="h-4 w-4" />
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="cards" className="space-y-4">
+              {/* Account Type Filter Tabs */}
+              <Tabs
+                value={selectedAccountType}
+                onValueChange={(value) =>
+                  setSelectedAccountType(value as AccountType | "all")
+                }
+                className="mb-10"
+              >
+                <div className="w-full overflow-hidden">
+                  <div className="overflow-x-auto scrollbar-hide">
+                    <TabsList className="inline-flex w-max min-w-full sm:w-fit sm:min-w-fit justify-start">
+                      {accountTypes.map((type) => (
+                        <TabsTrigger
+                          key={type}
+                          value={type}
+                          className="px-6 capitalize whitespace-nowrap flex-shrink-0"
+                        >
+                          {formatTabName(type)}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </div>
                 </div>
-              </div>
-            </Tabs>
-            <AccountsCardView
-              accounts={filteredAccounts}
-              onEdit={setEditingAccount}
-              onDelete={handleDelete}
-            />
-          </TabsContent>
-          <TabsContent value="table" className="space-y-4">
-            <AccountsTable
-              accounts={accounts}
-              onEdit={setEditingAccount}
-              onDelete={handleDelete}
-            />
-          </TabsContent>
-        </Tabs>
+              </Tabs>
+              <AccountsCardView
+                accounts={filteredAccounts}
+                onEdit={setEditingAccount}
+                onDelete={handleDelete}
+              />
+            </TabsContent>
+            <TabsContent value="table" className="space-y-4">
+              <AccountsTable
+                accounts={accounts}
+                onEdit={setEditingAccount}
+                onDelete={handleDelete}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </PullToRefresh>
 
-        {/* Create Account Sheet */}
-        <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
-            <SheetHeader className="p-4">
-              <SheetTitle>Create Account</SheetTitle>
-            </SheetHeader>
-            <AccountForm
-              onSuccess={handleCreateSuccess}
-              onCancel={() => setIsCreateOpen(false)}
-              onSubmit={handleCreateAccount}
-            />
-          </SheetContent>
-        </Sheet>
+      {/* Create Account Sheet */}
+      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+          <SheetHeader className="p-4">
+            <SheetTitle>Create Account</SheetTitle>
+          </SheetHeader>
+          <AccountForm
+            onCancel={() => setIsCreateOpen(false)}
+            onSubmit={handleCreateAccount}
+          />
+        </SheetContent>
+      </Sheet>
 
-        {/* Edit Account Sheet */}
-        <Sheet
-          open={!!editingAccount}
-          onOpenChange={(open) => !open && setEditingAccount(undefined)}
-        >
-          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
-            <SheetHeader className="p-4">
-              <SheetTitle>Edit Account</SheetTitle>
-            </SheetHeader>
-            <AccountForm
-              onSuccess={handleEditSuccess}
-              onCancel={() => setEditingAccount(undefined)}
-              initialData={editingAccount}
-              onSubmit={handleUpdateAccount}
-            />
-          </SheetContent>
-        </Sheet>
+      {/* Edit Account Sheet */}
+      <Sheet
+        open={!!editingAccount}
+        onOpenChange={(open) => !open && setEditingAccount(undefined)}
+      >
+        <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+          <SheetHeader className="p-4">
+            <SheetTitle>Edit Account</SheetTitle>
+          </SheetHeader>
+          <AccountForm
+            onCancel={() => setEditingAccount(undefined)}
+            initialData={editingAccount}
+            onSubmit={handleUpdateAccount}
+          />
+        </SheetContent>
+      </Sheet>
 
-        {/* Import Account Sheet */}
-        <ImportSheet open={isImportOpen} onOpenChange={setIsImportOpen} />
-      </div>
+      {/* Import Account Sheet */}
+      <ImportSheet open={isImportOpen} onOpenChange={setIsImportOpen} />
     </SidebarInset>
   );
 }

@@ -16,7 +16,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 interface AccountFormProps {
-  onSuccess: () => void;
   onCancel: () => void;
   initialData?: Account;
   onSubmit: (accountData: Omit<Account, "id" | "remainingCreditLimit">) => void;
