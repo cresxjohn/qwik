@@ -38,7 +38,6 @@ import {
   Banknote,
   TrendingUp,
 } from "lucide-react";
-import { toast } from "sonner";
 
 interface AccountsCardViewProps {
   accounts: Account[];
@@ -112,7 +111,6 @@ export function AccountsCardView({
 }: AccountsCardViewProps) {
   const handleDelete = (id: string) => {
     onDelete?.(id);
-    toast.success("Account deleted successfully");
   };
 
   // Group accounts by type

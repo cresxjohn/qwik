@@ -11,11 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockAccounts } from "@/shared/mock";
 import { AccountsCardView } from "./accounts-card-view";
 import { AccountsTable } from "./accounts-table";
+import { AccountForm } from "./account-form";
 import { formatCurrency } from "@/shared/utils";
 import {
   PiggyBank,
@@ -26,46 +32,64 @@ import {
   Table,
 } from "lucide-react";
 import { useState } from "react";
-import type { AccountType } from "@/shared/types";
+import type { AccountType, Account } from "@/shared/types";
+import { toast } from "sonner";
+import { useAccountsStore } from "@/store/accounts";
 
 export default function Page() {
+  const {
+    items: accounts,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+  } = useAccountsStore();
   const [selectedAccountType, setSelectedAccountType] = useState<
     AccountType | "all"
   >("all");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | undefined>();
 
   // Calculate summary metrics
-  const totalBalance = mockAccounts
-    .filter((account) => account.type === "cash" || account.type === "savings")
-    .reduce((sum, account) => sum + account.balance, 0);
-
-  const totalLoanOutstanding = mockAccounts
-    .filter((account) => account.type === "loan")
-    .reduce((sum, account) => sum + Math.abs(account.balance), 0);
-
-  const totalCreditBalances = mockAccounts
+  const totalBalance = accounts
     .filter(
       (account) =>
-        account.type === "credit card" || account.type === "line of credit"
+        !account.excludeFromBalances &&
+        (account.type === "cash" || account.type === "savings")
+    )
+    .reduce((sum, account) => sum + account.balance, 0);
+
+  const totalLoanOutstanding = accounts
+    .filter(
+      (account) => !account.excludeFromBalances && account.type === "loan"
     )
     .reduce((sum, account) => sum + Math.abs(account.balance), 0);
 
-  const totalRemainingCredits = mockAccounts
+  const totalCreditBalances = accounts
     .filter(
       (account) =>
-        account.type === "credit card" || account.type === "line of credit"
+        !account.excludeFromBalances &&
+        (account.type === "credit card" || account.type === "line of credit")
+    )
+    .reduce((sum, account) => sum + Math.abs(account.balance), 0);
+
+  const totalRemainingCredits = accounts
+    .filter(
+      (account) =>
+        !account.excludeFromBalances &&
+        (account.type === "credit card" || account.type === "line of credit")
     )
     .reduce((sum, account) => sum + (account.remainingCreditLimit || 0), 0);
 
   // Filter accounts based on selected type
   const filteredAccounts =
     selectedAccountType === "all"
-      ? mockAccounts
-      : mockAccounts.filter((account) => account.type === selectedAccountType);
+      ? accounts
+      : accounts.filter((account) => account.type === selectedAccountType);
 
   // Get unique account types for tabs
   const accountTypes: (AccountType | "all")[] = [
     "all",
-    ...Array.from(new Set(mockAccounts.map((account) => account.type))),
+    ...Array.from(new Set(accounts.map((account) => account.type))),
   ];
 
   const formatTabName = (type: AccountType | "all") => {
@@ -74,6 +98,52 @@ export default function Page() {
       .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
+  };
+
+  const handleCreateSuccess = () => {
+    setIsCreateOpen(false);
+    toast.success("Account created successfully");
+  };
+
+  const handleEditSuccess = () => {
+    setEditingAccount(undefined);
+    toast.success("Account updated successfully");
+  };
+
+  const handleDelete = (id: string) => {
+    deleteAccount(id);
+    toast.success("Account deleted successfully");
+  };
+
+  const handleCreateAccount = (
+    accountData: Omit<Account, "id" | "remainingCreditLimit">
+  ) => {
+    const newAccount: Account = {
+      ...accountData,
+      id: crypto.randomUUID(),
+      remainingCreditLimit: accountData.creditLimit
+        ? accountData.creditLimit +
+          accountData.balance -
+          accountData.onHoldAmount
+        : null,
+    };
+    addAccount(newAccount);
+  };
+
+  const handleUpdateAccount = (
+    accountData: Omit<Account, "id" | "remainingCreditLimit">
+  ) => {
+    if (!editingAccount) return;
+    const updatedAccount: Account = {
+      ...accountData,
+      id: editingAccount.id,
+      remainingCreditLimit: accountData.creditLimit
+        ? accountData.creditLimit +
+          accountData.balance -
+          accountData.onHoldAmount
+        : null,
+    };
+    updateAccount(updatedAccount);
   };
 
   return (
@@ -101,7 +171,7 @@ export default function Page() {
             <p className="text-2xl font-bold mb-1">Accounts</p>
             <p className="text-sm font-light">Manage your accounts.</p>
           </div>
-          <Button>Add Account</Button>
+          <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
         </div>
 
         {/* Summary Widgets */}
@@ -207,12 +277,52 @@ export default function Page() {
                 </div>
               </div>
             </Tabs>
-            <AccountsCardView accounts={filteredAccounts} />
+            <AccountsCardView
+              accounts={filteredAccounts}
+              onEdit={setEditingAccount}
+              onDelete={handleDelete}
+            />
           </TabsContent>
           <TabsContent value="table" className="space-y-4 mb-6">
-            <AccountsTable accounts={mockAccounts} />
+            <AccountsTable
+              accounts={accounts}
+              onEdit={setEditingAccount}
+              onDelete={handleDelete}
+            />
           </TabsContent>
         </Tabs>
+
+        {/* Create Account Sheet */}
+        <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+            <SheetHeader className="p-4">
+              <SheetTitle>Create Account</SheetTitle>
+            </SheetHeader>
+            <AccountForm
+              onSuccess={handleCreateSuccess}
+              onCancel={() => setIsCreateOpen(false)}
+              onSubmit={handleCreateAccount}
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Edit Account Sheet */}
+        <Sheet
+          open={!!editingAccount}
+          onOpenChange={(open) => !open && setEditingAccount(undefined)}
+        >
+          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+            <SheetHeader className="p-4">
+              <SheetTitle>Edit Account</SheetTitle>
+            </SheetHeader>
+            <AccountForm
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditingAccount(undefined)}
+              initialData={editingAccount}
+              onSubmit={handleUpdateAccount}
+            />
+          </SheetContent>
+        </Sheet>
       </div>
     </SidebarInset>
   );

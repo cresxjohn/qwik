@@ -17,7 +17,6 @@ import {
 import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
 import * as React from "react";
-import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -134,8 +133,10 @@ interface ActionCellProps {
 
 const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
   const account = row.original;
-  const onEdit = (table.options.meta as { onEdit?: (account: Account) => void })
-    ?.onEdit;
+  const { onEdit } = table.options.meta as {
+    onEdit?: (account: Account) => void;
+    onDelete?: (id: string) => void;
+  };
 
   return (
     <DropdownMenu>
@@ -214,7 +215,6 @@ export function AccountsTable({
   const handleDelete = React.useCallback(
     (id: string) => {
       onDelete?.(id);
-      toast.success("Account deleted successfully");
     },
     [onDelete]
   );
