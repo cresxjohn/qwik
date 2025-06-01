@@ -131,37 +131,6 @@ export default function Page() {
     }
   };
 
-  // Show loading state
-  if (loading && accounts.length === 0) {
-    return (
-      <SidebarInset>
-        <header className="sticky top-0 z-10 bg-background sm:rounded-4xl flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/wallet">Wallet</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Accounts</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Loading accounts...</p>
-          </div>
-        </div>
-      </SidebarInset>
-    );
-  }
-
   return (
     <SidebarInset>
       <header className="sticky top-0 z-10 bg-background sm:rounded-4xl flex h-16 shrink-0 items-center gap-2">
@@ -184,7 +153,7 @@ export default function Page() {
 
       <PullToRefresh
         onRefresh={loadAccounts}
-        disabled={loading}
+        refreshing={loading}
         className="flex-1"
       >
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">

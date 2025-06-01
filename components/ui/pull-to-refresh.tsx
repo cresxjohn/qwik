@@ -5,6 +5,7 @@ interface PullToRefreshProps {
   onRefresh: () => Promise<void> | void;
   children: React.ReactNode;
   disabled?: boolean;
+  refreshing?: boolean; // External loading state
   threshold?: number;
   className?: string;
 }
@@ -13,6 +14,7 @@ export function PullToRefresh({
   onRefresh,
   children,
   disabled = false,
+  refreshing = false, // External loading state
   threshold = 80,
   className = "",
 }: PullToRefreshProps) {
@@ -23,15 +25,18 @@ export function PullToRefresh({
   const startY = useRef(0);
   const currentY = useRef(0);
 
+  // Combined refreshing state (internal or external)
+  const isCurrentlyRefreshing = isRefreshing || refreshing;
+
   const canPull = useCallback(() => {
-    if (disabled || isRefreshing) return false;
+    if (disabled || isCurrentlyRefreshing) return false;
 
     // Only allow pull when at the top of the scroll container
     const container = containerRef.current;
     if (!container) return false;
 
     return container.scrollTop === 0;
-  }, [disabled, isRefreshing]);
+  }, [disabled, isCurrentlyRefreshing]);
 
   const handleStart = useCallback(
     (clientY: number) => {
@@ -65,7 +70,7 @@ export function PullToRefresh({
 
     setIsPulling(false);
 
-    if (pullDistance >= threshold && !isRefreshing) {
+    if (pullDistance >= threshold && !isCurrentlyRefreshing) {
       setIsRefreshing(true);
       try {
         await onRefresh();
@@ -77,7 +82,7 @@ export function PullToRefresh({
     }
 
     setPullDistance(0);
-  }, [isPulling, pullDistance, threshold, isRefreshing, onRefresh]);
+  }, [isPulling, pullDistance, threshold, isCurrentlyRefreshing, onRefresh]);
 
   // Touch events
   const handleTouchStart = useCallback(
@@ -163,7 +168,7 @@ export function PullToRefresh({
 
   const refresherHeight = Math.max(0, pullDistance);
   const isAtThreshold = pullDistance >= threshold;
-  const shouldShowRefresher = pullDistance > 0 || isRefreshing;
+  const shouldShowRefresher = pullDistance > 0 || isCurrentlyRefreshing;
 
   return (
     <div ref={containerRef} className={`relative overflow-auto ${className}`}>
@@ -179,11 +184,15 @@ export function PullToRefresh({
         <div className="flex flex-col items-center justify-center text-muted-foreground">
           <RefreshCw
             className={`h-5 w-5 transition-transform duration-200 ${
-              isRefreshing ? "animate-spin" : isAtThreshold ? "rotate-180" : ""
+              isCurrentlyRefreshing
+                ? "animate-spin"
+                : isAtThreshold
+                ? "rotate-180"
+                : ""
             }`}
           />
           <span className="text-xs mt-1">
-            {isRefreshing
+            {isCurrentlyRefreshing
               ? "Refreshing..."
               : isAtThreshold
               ? "Release to refresh"
@@ -196,7 +205,11 @@ export function PullToRefresh({
       <div
         className="transition-transform duration-200"
         style={{
-          transform: `translateY(${pullDistance > 0 ? pullDistance : 0}px)`,
+          transform: `translateY(${
+            pullDistance > 0 || (isCurrentlyRefreshing && pullDistance === 0)
+              ? Math.max(pullDistance, isCurrentlyRefreshing ? 60 : 0)
+              : 0
+          }px)`,
         }}
       >
         {children}
