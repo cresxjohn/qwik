@@ -19,4 +19,6 @@ export interface Account {
   annualFee: number | null;
   afWaiverSpendingRequirement: number | null;
   excludeFromBalances: boolean;
+  interestRate: number | null;
+  interestFrequency: string | null;
 }

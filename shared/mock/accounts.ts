@@ -1,86 +1,308 @@
-import { faker } from "@faker-js/faker";
-import { Account, AccountType } from "../types";
-import { ACCOUNT_TYPES, BANK_NAMES } from "../constants";
+import { Account } from "../types";
 
-function generateAccountName(type: AccountType): string {
-  const bank = faker.helpers.arrayElement(BANK_NAMES);
-
-  switch (type) {
-    case "cash":
-      return `${bank} Cash`;
-    case "savings":
-      return `${bank} Savings`;
-    case "credit card":
-      const cardTypes = ["Platinum", "Gold", "Titanium", "World", "Signature"];
-      const cardType = faker.helpers.arrayElement(cardTypes);
-      return `${bank} ${cardType} Card`;
-    case "line of credit":
-      return `${bank} Credit Line`;
-    case "loan":
-      const loanTypes = ["Personal", "Home", "Auto", "Business"];
-      const loanType = faker.helpers.arrayElement(loanTypes);
-      return `${bank} ${loanType} Loan`;
-    case "insurance":
-      const insuranceTypes = ["Life", "Health", "Investment", "VUL"];
-      const insuranceType = faker.helpers.arrayElement(insuranceTypes);
-      return `${bank} ${insuranceType} Insurance`;
-    default:
-      return bank;
-  }
-}
-
-function generateAccount(): Account {
-  const type = faker.helpers.arrayElement(ACCOUNT_TYPES);
-  const isCreditType =
-    type === "credit card" || type === "line of credit" || type === "loan";
-  const creditLimit = isCreditType
-    ? faker.number.int({ min: 50000, max: 1000000 })
-    : null;
-  const onHoldAmount = isCreditType
-    ? faker.number.int({ min: 0, max: 10000 })
-    : 0;
-
-  let balance: number;
-  if (isCreditType) {
-    balance = -faker.number.int({ min: 0, max: creditLimit! });
-  } else if (type === "insurance") {
-    balance = faker.number.int({ min: 100000, max: 5000000 });
-  } else {
-    balance = faker.number.int({ min: 1000, max: 500000 });
-  }
-
-  return {
-    id: faker.string.uuid(),
-    name: generateAccountName(type),
-    balance,
-    type,
-    creditLimit,
-    onHoldAmount,
-    remainingCreditLimit: creditLimit
-      ? creditLimit + balance - onHoldAmount
-      : null,
-    statementDate: isCreditType ? faker.number.int({ min: 1, max: 28 }) : null,
-    daysDueAfterStatementDate: isCreditType
-      ? faker.number.int({ min: 15, max: 25 })
-      : null,
-    annualFee: isCreditType ? faker.number.int({ min: 1500, max: 6000 }) : null,
-    afWaiverSpendingRequirement: isCreditType
-      ? faker.number.int({ min: 50000, max: 200000 })
-      : null,
-    excludeFromBalances: faker.datatype.boolean(),
-  };
-}
-
-function generateAccounts(count = 10): Account[] {
-  return Array.from({ length: count }, generateAccount).sort((a, b) => {
-    // Sort by type first
-    const typeOrder =
-      ACCOUNT_TYPES.indexOf(a.type) - ACCOUNT_TYPES.indexOf(b.type);
-    if (typeOrder !== 0) return typeOrder;
-
-    // Then by name
-    return a.name.localeCompare(b.name);
-  });
-}
-
-export const mockAccounts = generateAccounts();
+export const mockAccounts: Account[] = [
+  {
+    id: "cash-001",
+    name: "Cash",
+    balance: 0.0,
+    type: "cash",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "rcbc-flex-gold-001",
+    name: "RCBC Flex Gold",
+    balance: 10895.23,
+    type: "credit card",
+    creditLimit: 522000.0,
+    onHoldAmount: 0,
+    remainingCreditLimit: 511104.77,
+    statementDate: 5,
+    daysDueAfterStatementDate: 25,
+    annualFee: 3000.0,
+    afWaiverSpendingRequirement: 40000,
+    excludeFromBalances: false,
+    interestRate: 3.0,
+    interestFrequency: null,
+  },
+  {
+    id: "atome-001",
+    name: "Atome",
+    balance: 0.0,
+    type: "credit card",
+    creditLimit: 36000.0,
+    onHoldAmount: 0,
+    remainingCreditLimit: 36000.0,
+    statementDate: 11,
+    daysDueAfterStatementDate: 20,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "metrobank-m-free-001",
+    name: "Metrobank M Free",
+    balance: 0.0,
+    type: "credit card",
+    creditLimit: 210000.0,
+    onHoldAmount: 0,
+    remainingCreditLimit: 210000.0,
+    statementDate: 12,
+    daysDueAfterStatementDate: 21,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 3.0,
+    interestFrequency: null,
+  },
+  {
+    id: "security-bank-wave-001",
+    name: "Security Bank Wave",
+    balance: 239.0,
+    type: "credit card",
+    creditLimit: 475000.0,
+    onHoldAmount: 200000.0,
+    remainingCreditLimit: 274761.0,
+    statementDate: 12,
+    daysDueAfterStatementDate: 21,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 2.5,
+    interestFrequency: null,
+  },
+  {
+    id: "bpi-amore-cashback-001",
+    name: "BPI Amore Cashback",
+    balance: 0.0,
+    type: "credit card",
+    creditLimit: 100000.0,
+    onHoldAmount: 50000.0,
+    remainingCreditLimit: 50000.0,
+    statementDate: 16,
+    daysDueAfterStatementDate: 20,
+    annualFee: 2050.0,
+    afWaiverSpendingRequirement: 180000,
+    excludeFromBalances: false,
+    interestRate: 3.0,
+    interestFrequency: null,
+  },
+  {
+    id: "ub-rewards-platinum-001",
+    name: "UB Rewards Platinum",
+    balance: 0.0,
+    type: "credit card",
+    creditLimit: 50000.0,
+    onHoldAmount: 0,
+    remainingCreditLimit: 50000.0,
+    statementDate: 23,
+    daysDueAfterStatementDate: 17,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 3.0,
+    interestFrequency: null,
+  },
+  {
+    id: "ub-sr-platinum-001",
+    name: "UB S&R Platinum",
+    balance: 0.0,
+    type: "credit card",
+    creditLimit: 50000.0,
+    onHoldAmount: 0,
+    remainingCreditLimit: 50000.0,
+    statementDate: 23,
+    daysDueAfterStatementDate: 17,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 3.0,
+    interestFrequency: null,
+  },
+  {
+    id: "metrobank-toyota-001",
+    name: "Metrobank Toyota",
+    balance: 0.0,
+    type: "credit card",
+    creditLimit: 210000.0,
+    onHoldAmount: 0,
+    remainingCreditLimit: 210000.0,
+    statementDate: 8,
+    daysDueAfterStatementDate: 21,
+    annualFee: 2500.0,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 3.0,
+    interestFrequency: null,
+  },
+  {
+    id: "cimb-revi-credit-001",
+    name: "CIMB Revi Credit",
+    balance: 0.0,
+    type: "line of credit",
+    creditLimit: 60000.0,
+    onHoldAmount: 16026.69,
+    remainingCreditLimit: 43973.31,
+    statementDate: 13,
+    daysDueAfterStatementDate: 15,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "bpi-savings-001",
+    name: "BPI Savings",
+    balance: 0.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "cimb-savings-001",
+    name: "CIMB Savings",
+    balance: 0.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "ewb-savings-001",
+    name: "EWB Savings",
+    balance: 0.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "gcash-001",
+    name: "GCash",
+    balance: 0.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "metrobank-savings-001",
+    name: "Metrobank Savings",
+    balance: 0.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "own-bank-001",
+    name: "Own Bank",
+    balance: 76780.46,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 3.8,
+    interestFrequency: "Yearly",
+  },
+  {
+    id: "rcbc-payroll-001",
+    name: "RCBC Payroll",
+    balance: 0.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+  {
+    id: "sea-bank-001",
+    name: "Sea Bank",
+    balance: 400000.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: 4.0,
+    interestFrequency: "Yearly",
+  },
+  {
+    id: "ub-savings-001",
+    name: "UB Savings",
+    balance: 85000.0,
+    type: "savings",
+    creditLimit: null,
+    onHoldAmount: 0,
+    remainingCreditLimit: null,
+    statementDate: null,
+    daysDueAfterStatementDate: null,
+    annualFee: null,
+    afWaiverSpendingRequirement: null,
+    excludeFromBalances: false,
+    interestRate: null,
+    interestFrequency: null,
+  },
+];

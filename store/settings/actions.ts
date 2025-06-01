@@ -14,8 +14,23 @@ export const createSettingsActions: StateCreator<
     nextDueDate: false,
   },
 
+  accountsTableColumnVisibility: {
+    statementDate: false,
+    daysDueAfterStatementDate: false,
+    annualFee: false,
+    afWaiverSpendingRequirement: false,
+    excludeFromBalances: false,
+    interestRate: false,
+    interestFrequency: false,
+  },
+
   updatePaymentsTableColumnVisibility: (visibility: VisibilityState) =>
     set((state) => {
       state.paymentsTableColumnVisibility = visibility;
+    }),
+
+  updateAccountsTableColumnVisibility: (visibility: VisibilityState) =>
+    set((state) => {
+      state.accountsTableColumnVisibility = visibility;
     }),
 });
