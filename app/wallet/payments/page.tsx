@@ -68,7 +68,6 @@ export default function PaymentsPage() {
           </Breadcrumb>
         </div>
       </header>
-
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>

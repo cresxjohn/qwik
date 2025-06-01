@@ -167,8 +167,8 @@ export default function Page() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="px-6">
-        <div className="mb-4">
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold mb-1">Accounts</p>
@@ -269,7 +269,7 @@ export default function Page() {
               </TabsTrigger>
             </TabsList>
           </div>
-          <TabsContent value="cards" className="space-y-4 mb-6">
+          <TabsContent value="cards" className="space-y-4">
             {/* Account Type Filter Tabs */}
             <Tabs
               value={selectedAccountType}
@@ -300,7 +300,7 @@ export default function Page() {
               onDelete={handleDelete}
             />
           </TabsContent>
-          <TabsContent value="table" className="space-y-4 mb-6">
+          <TabsContent value="table" className="space-y-4">
             <AccountsTable
               accounts={accounts}
               onEdit={setEditingAccount}
