@@ -44,7 +44,7 @@ export function AccountSummary({ accounts }: AccountSummaryProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
           <PiggyBank className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -57,7 +57,7 @@ export function AccountSummary({ accounts }: AccountSummaryProps) {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">
             Loan Outstanding
           </CardTitle>
@@ -72,7 +72,7 @@ export function AccountSummary({ accounts }: AccountSummaryProps) {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">Credit Used</CardTitle>
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -87,7 +87,7 @@ export function AccountSummary({ accounts }: AccountSummaryProps) {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium">
             Available Credit
           </CardTitle>

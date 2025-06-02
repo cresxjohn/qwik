@@ -65,8 +65,8 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-      <Card className="p-0">
-        <CardContent className="p-6">
+      <Card>
+        <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-primary/10 rounded-full">
@@ -87,9 +87,8 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="p-0">
-        <CardContent className="p-6">
+      <Card>
+        <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-primary/10 rounded-full">
@@ -110,9 +109,8 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="p-0">
-        <CardContent className="p-6">
+      <Card>
+        <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-primary/10 rounded-full">
@@ -140,9 +138,8 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="p-0">
-        <CardContent className="p-6">
+      <Card>
+        <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-primary/10 rounded-full">
