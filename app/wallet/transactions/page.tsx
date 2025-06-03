@@ -35,18 +35,22 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Transactions</h2>
-            <p className="text-muted-foreground">
-              View and manage your transaction history
-            </p>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-4 md:pt-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                Transactions
+              </h2>
+              <p className="text-muted-foreground">
+                View and manage your transaction history
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-6">
-          <TransactionsTable data={transactions} />
+          <div className="mt-6">
+            <TransactionsTable data={transactions} />
+          </div>
         </div>
       </div>
     </SidebarInset>
