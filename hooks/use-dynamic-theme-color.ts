@@ -61,11 +61,11 @@ export function useDynamicThemeColor() {
     if (typeof window === "undefined") return;
 
     const updateThemeColor = () => {
-      // Get the computed sidebar color
-      const sidebarColor = getCSSCustomProperty("--sidebar");
+      // Get the computed background color
+      const backgroundColor = getCSSCustomProperty("--background");
 
-      if (sidebarColor) {
-        const hexColor = oklchToHex(sidebarColor);
+      if (backgroundColor) {
+        const hexColor = oklchToHex(backgroundColor);
         setThemeColor(hexColor);
 
         // Update the theme-color meta tag
