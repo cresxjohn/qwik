@@ -1,6 +1,6 @@
 "use client";
 
-import { Account } from "@/shared/types";
+import { Account, AccountType } from "@/shared/types";
 import { useSettingsStore } from "@/store/settings";
 import {
   ColumnDef,
@@ -235,7 +235,7 @@ export function AccountsTable({
   // Get unique account types for filter
   const accountTypes = React.useMemo(() => {
     // Define the desired order for account types
-    const accountTypeOrder = [
+    const accountTypeOrder: string[] = [
       "cash",
       "savings",
       "credit card",
@@ -244,10 +244,14 @@ export function AccountsTable({
       "insurance",
     ];
 
-    const types = [...new Set(accounts.map((account) => account.type))];
+    const types = [
+      ...new Set(accounts.map((account) => account.type)),
+    ] as AccountType[];
 
     // Sort types by the defined order
-    return accountTypeOrder.filter((type) => types.includes(type));
+    return accountTypeOrder.filter((type) =>
+      types.includes(type as AccountType)
+    );
   }, [accounts]);
 
   const columns = React.useMemo<ColumnDef<Account>[]>(

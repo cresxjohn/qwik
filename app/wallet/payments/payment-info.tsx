@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageViewer } from "@/components/ui/image-viewer";
 import {
@@ -19,9 +20,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Payment, Frequency } from "@/shared/types";
-import { formatCurrency } from "@/shared/utils";
+import { Frequency, Payment } from "@/shared/types";
 import {
+  formatCurrency,
   formatRecurrencePattern,
   legacyToRecurrencePattern,
 } from "@/shared/utils";
@@ -30,16 +31,12 @@ import {
   CalendarIcon,
   CreditCard,
   Edit,
-  ExternalLink,
-  FileText,
   Hash,
   Link as LinkIcon,
-  Repeat,
   Tag,
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 
 interface PaymentInfoProps {
   payment: Payment | null;

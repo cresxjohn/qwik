@@ -1,9 +1,8 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Payment, Frequency } from "@/shared/types";
+import { Frequency, Payment } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
-import { legacyToRecurrencePattern } from "@/shared/utils";
 import dayjs from "dayjs";
 import { Calendar, DollarSign, Repeat, TrendingUp } from "lucide-react";
 

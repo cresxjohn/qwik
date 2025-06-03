@@ -65,10 +65,21 @@ export default function Page() {
       ? accounts
       : accounts.filter((account) => account.type === selectedAccountType);
 
-  // Get unique account types for tabs
+  // Get unique account types for tabs in the correct order
+  const accountTypeOrder: AccountType[] = [
+    "cash",
+    "savings",
+    "credit card",
+    "line of credit",
+    "loan",
+    "insurance",
+  ];
+
   const accountTypes: (AccountType | "all")[] = [
     "all",
-    ...Array.from(new Set(accounts.map((account) => account.type))),
+    ...accountTypeOrder.filter((type) =>
+      accounts.some((account) => account.type === type)
+    ),
   ];
 
   const formatTabName = (type: AccountType | "all") => {
