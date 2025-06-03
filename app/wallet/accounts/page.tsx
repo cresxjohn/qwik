@@ -242,14 +242,16 @@ export default function Page() {
 
       {/* Create Account Sheet */}
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
-          <SheetHeader className="p-4">
-            <SheetTitle>Create New Account</SheetTitle>
+        <SheetContent className="w-full sm:max-w-md h-full overflow-hidden p-0 gap-0 flex flex-col">
+          <SheetHeader className="p-4 shrink-0">
+            <SheetTitle>Create Account</SheetTitle>
           </SheetHeader>
-          <AccountForm
-            onCancel={() => setIsCreateOpen(false)}
-            onSubmit={handleCreateAccount}
-          />
+          <div className="flex-1 overflow-hidden">
+            <AccountForm
+              onCancel={() => setIsCreateOpen(false)}
+              onSubmit={handleCreateAccount}
+            />
+          </div>
         </SheetContent>
       </Sheet>
 
@@ -258,15 +260,17 @@ export default function Page() {
         open={!!editingAccount}
         onOpenChange={(open) => !open && setEditingAccount(undefined)}
       >
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
-          <SheetHeader className="p-4">
+        <SheetContent className="w-full sm:max-w-md h-full overflow-hidden p-0 gap-0 flex flex-col">
+          <SheetHeader className="p-4 shrink-0">
             <SheetTitle>Edit Account</SheetTitle>
           </SheetHeader>
-          <AccountForm
-            onCancel={() => setEditingAccount(undefined)}
-            initialData={editingAccount}
-            onSubmit={handleUpdateAccount}
-          />
+          <div className="flex-1 overflow-hidden">
+            <AccountForm
+              onCancel={() => setEditingAccount(undefined)}
+              initialData={editingAccount}
+              onSubmit={handleUpdateAccount}
+            />
+          </div>
         </SheetContent>
       </Sheet>
 

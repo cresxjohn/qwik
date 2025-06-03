@@ -177,14 +177,16 @@ export function AccountSelect({
       </Popover>
 
       <Sheet open={showAccountForm} onOpenChange={setShowAccountForm}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
-          <SheetHeader className="p-4">
-            <SheetTitle>Create New Account</SheetTitle>
+        <SheetContent className="w-full sm:max-w-md h-full overflow-hidden p-0 gap-0 flex flex-col">
+          <SheetHeader className="p-4 shrink-0">
+            <SheetTitle>Create Account</SheetTitle>
           </SheetHeader>
-          <AccountForm
-            onCancel={() => setShowAccountForm(false)}
-            onSubmit={handleCreateAccount}
-          />
+          <div className="flex-1 overflow-hidden">
+            <AccountForm
+              onCancel={() => setShowAccountForm(false)}
+              onSubmit={handleCreateAccount}
+            />
+          </div>
         </SheetContent>
       </Sheet>
     </>
