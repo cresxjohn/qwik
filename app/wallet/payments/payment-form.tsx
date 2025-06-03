@@ -49,8 +49,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { AccountSelect } from "./components/account-select";
-import { CategorySelect } from "./components/category-select";
+import { AccountSelect } from "./account-select";
+import { CategorySelect } from "./category-select";
 import { cn } from "@/lib/utils";
 
 const frequencyTypes = [
