@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Payment } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
 import dayjs from "dayjs";
@@ -65,94 +65,70 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
   );
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
       <Card>
-        <CardContent className="mt-0">
-          <div className="flex items-center justify-between space-x-4">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-red-500/10 rounded-full">
-                <AlertTriangle className="h-6 w-6 text-red-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium leading-none">Overdue</p>
-                <p className="text-2xl font-bold mt-2">
-                  {formatCurrency(totalOverdue)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {overduePayments.length} overdue
-                </p>
-              </div>
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {formatCurrency(totalOverdue)}
           </div>
+          <p className="text-xs text-muted-foreground">
+            {overduePayments.length} overdue
+          </p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardContent className="mt-0">
-          <div className="flex items-center justify-between space-x-4">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-green-500/10 rounded-full">
-                <ArrowDownCircle className="h-6 w-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium leading-none">Money In</p>
-                <p className="text-2xl font-bold mt-2">
-                  {formatCurrency(totalIncomeThisMonth)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {upcomingIncomeThisMonth.length > 0
-                    ? `${upcomingIncomeThisMonth.length} due this month`
-                    : "none due this month"}
-                </p>
-              </div>
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Money In</CardTitle>
+          <ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {formatCurrency(totalIncomeThisMonth)}
           </div>
+          <p className="text-xs text-muted-foreground">
+            {upcomingIncomeThisMonth.length > 0
+              ? `${upcomingIncomeThisMonth.length} due this month`
+              : "none due this month"}
+          </p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardContent className="mt-0">
-          <div className="flex items-center justify-between space-x-4">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-red-500/10 rounded-full">
-                <ArrowUpCircle className="h-6 w-6 text-red-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium leading-none">Money Out</p>
-                <p className="text-2xl font-bold mt-2">
-                  {formatCurrency(totalExpensesThisMonth)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {upcomingExpensesThisMonth.length > 0
-                    ? `${upcomingExpensesThisMonth.length} due this month`
-                    : "none due this month"}
-                </p>
-              </div>
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Money Out</CardTitle>
+          <ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {formatCurrency(totalExpensesThisMonth)}
           </div>
+          <p className="text-xs text-muted-foreground">
+            {upcomingExpensesThisMonth.length > 0
+              ? `${upcomingExpensesThisMonth.length} due this month`
+              : "none due this month"}
+          </p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardContent className="mt-0">
-          <div className="flex items-center justify-between space-x-4">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-blue-500/10 rounded-full">
-                <ArrowRightLeft className="h-6 w-6 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium leading-none">Transfers</p>
-                <p className="text-2xl font-bold mt-2">
-                  {formatCurrency(totalTransfersThisMonth)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {upcomingTransfersThisMonth.length > 0
-                    ? `${upcomingTransfersThisMonth.length} due this month`
-                    : "none due this month"}
-                </p>
-              </div>
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Transfers</CardTitle>
+          <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {formatCurrency(totalTransfersThisMonth)}
           </div>
+          <p className="text-xs text-muted-foreground">
+            {upcomingTransfersThisMonth.length > 0
+              ? `${upcomingTransfersThisMonth.length} due this month`
+              : "none due this month"}
+          </p>
         </CardContent>
       </Card>
     </div>
