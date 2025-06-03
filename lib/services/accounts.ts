@@ -23,6 +23,25 @@ export function dbAccountToAccount(dbAccount: AccountRow): Account {
     excludeFromBalances: dbAccount.exclude_from_balances,
     interestRate: dbAccount.interest_rate,
     interestFrequency: dbAccount.interest_frequency,
+    // Loan specific fields
+    originalLoanAmount: dbAccount.original_loan_amount,
+    monthlyPaymentAmount: dbAccount.monthly_payment_amount,
+    loanStartDate: dbAccount.loan_start_date,
+    maturityDate: dbAccount.maturity_date,
+    loanTermMonths: dbAccount.loan_term_months,
+    loanType: dbAccount.loan_type,
+    // Insurance specific fields
+    policyType: dbAccount.policy_type,
+    premiumAmount: dbAccount.premium_amount,
+    premiumFrequency: dbAccount.premium_frequency,
+    coverageAmount: dbAccount.coverage_amount,
+    policyStartDate: dbAccount.policy_start_date,
+    policyEndDate: dbAccount.policy_end_date,
+    // Optional fields for all types
+    bankInstitution: dbAccount.bank_institution,
+    accountNumber: dbAccount.account_number,
+    minimumBalance: dbAccount.minimum_balance,
+    monthlyMaintenanceFee: dbAccount.monthly_maintenance_fee,
   };
 }
 
@@ -46,6 +65,25 @@ export function accountToDbInsert(
     exclude_from_balances: account.excludeFromBalances,
     interest_rate: account.interestRate,
     interest_frequency: account.interestFrequency,
+    // Loan specific fields
+    original_loan_amount: account.originalLoanAmount,
+    monthly_payment_amount: account.monthlyPaymentAmount,
+    loan_start_date: account.loanStartDate,
+    maturity_date: account.maturityDate,
+    loan_term_months: account.loanTermMonths,
+    loan_type: account.loanType,
+    // Insurance specific fields
+    policy_type: account.policyType,
+    premium_amount: account.premiumAmount,
+    premium_frequency: account.premiumFrequency,
+    coverage_amount: account.coverageAmount,
+    policy_start_date: account.policyStartDate,
+    policy_end_date: account.policyEndDate,
+    // Optional fields for all types
+    bank_institution: account.bankInstitution,
+    account_number: account.accountNumber,
+    minimum_balance: account.minimumBalance,
+    monthly_maintenance_fee: account.monthlyMaintenanceFee,
     user_id: userId,
   };
 }
@@ -76,6 +114,42 @@ export function accountToDbUpdate(account: Partial<Account>): AccountUpdate {
     update.interest_rate = account.interestRate;
   if (account.interestFrequency !== undefined)
     update.interest_frequency = account.interestFrequency;
+
+  // Loan specific fields
+  if (account.originalLoanAmount !== undefined)
+    update.original_loan_amount = account.originalLoanAmount;
+  if (account.monthlyPaymentAmount !== undefined)
+    update.monthly_payment_amount = account.monthlyPaymentAmount;
+  if (account.loanStartDate !== undefined)
+    update.loan_start_date = account.loanStartDate;
+  if (account.maturityDate !== undefined)
+    update.maturity_date = account.maturityDate;
+  if (account.loanTermMonths !== undefined)
+    update.loan_term_months = account.loanTermMonths;
+  if (account.loanType !== undefined) update.loan_type = account.loanType;
+
+  // Insurance specific fields
+  if (account.policyType !== undefined) update.policy_type = account.policyType;
+  if (account.premiumAmount !== undefined)
+    update.premium_amount = account.premiumAmount;
+  if (account.premiumFrequency !== undefined)
+    update.premium_frequency = account.premiumFrequency;
+  if (account.coverageAmount !== undefined)
+    update.coverage_amount = account.coverageAmount;
+  if (account.policyStartDate !== undefined)
+    update.policy_start_date = account.policyStartDate;
+  if (account.policyEndDate !== undefined)
+    update.policy_end_date = account.policyEndDate;
+
+  // Optional fields for all types
+  if (account.bankInstitution !== undefined)
+    update.bank_institution = account.bankInstitution;
+  if (account.accountNumber !== undefined)
+    update.account_number = account.accountNumber;
+  if (account.minimumBalance !== undefined)
+    update.minimum_balance = account.minimumBalance;
+  if (account.monthlyMaintenanceFee !== undefined)
+    update.monthly_maintenance_fee = account.monthlyMaintenanceFee;
 
   update.updated_at = new Date().toISOString();
 

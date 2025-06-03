@@ -15,7 +15,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
+import { ArrowDown, ArrowUp, MoreHorizontal, X } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -211,6 +211,9 @@ export function AccountsTable({
     []
   );
   const [rowSelection, setRowSelection] = React.useState({});
+  const [accountTypeFilter, setAccountTypeFilter] = React.useState<string[]>(
+    []
+  );
 
   const handleDelete = React.useCallback(
     (id: string) => {
@@ -218,6 +221,34 @@ export function AccountsTable({
     },
     [onDelete]
   );
+
+  // Filter accounts by selected types
+  const filteredAccounts = React.useMemo(() => {
+    if (accountTypeFilter.length === 0) {
+      return accounts;
+    }
+    return accounts.filter((account) =>
+      accountTypeFilter.includes(account.type)
+    );
+  }, [accounts, accountTypeFilter]);
+
+  // Get unique account types for filter
+  const accountTypes = React.useMemo(() => {
+    // Define the desired order for account types
+    const accountTypeOrder = [
+      "cash",
+      "savings",
+      "credit card",
+      "line of credit",
+      "loan",
+      "insurance",
+    ];
+
+    const types = [...new Set(accounts.map((account) => account.type))];
+
+    // Sort types by the defined order
+    return accountTypeOrder.filter((type) => types.includes(type));
+  }, [accounts]);
 
   const columns = React.useMemo<ColumnDef<Account>[]>(
     () => [
@@ -239,7 +270,6 @@ export function AccountsTable({
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
-            onClick={(event) => event.stopPropagation()}
             aria-label="Select row"
           />
         ),
@@ -252,14 +282,10 @@ export function AccountsTable({
         header: ({ column }) => (
           <SortableHeader column={column}>Name</SortableHeader>
         ),
-        cell: ({ row }) => {
-          const account = row.original;
-          return (
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{account.name}</span>
-            </div>
-          );
-        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("name")}</div>
+        ),
+        enableHiding: false,
         size: 200,
       },
       {
@@ -300,6 +326,19 @@ export function AccountsTable({
         size: 100,
       },
       {
+        accessorKey: "bankInstitution",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Bank/Institution</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const institution = row.getValue("bankInstitution") as string | null;
+          if (!institution) return "-";
+          return institution;
+        },
+        enableHiding: true,
+        size: 150,
+      },
+      {
         accessorKey: "interestRate",
         header: ({ column }) => (
           <SortableHeader column={column}>Interest Rate</SortableHeader>
@@ -325,6 +364,7 @@ export function AccountsTable({
         enableHiding: true,
         size: 130,
       },
+      // Credit Card/Line of Credit specific columns
       {
         accessorKey: "creditLimit",
         header: ({ column }) => (
@@ -347,17 +387,17 @@ export function AccountsTable({
           <SortableHeader column={column}>Available Credit</SortableHeader>
         ),
         cell: ({ row }) => {
-          const remainingCreditLimit = row.getValue("remainingCreditLimit") as
+          const remaining = row.getValue("remainingCreditLimit") as
             | number
             | null;
-          if (!remainingCreditLimit) return "-";
+          if (!remaining) return "-";
           return new Intl.NumberFormat("en-PH", {
             style: "currency",
             currency: "PHP",
-          }).format(remainingCreditLimit);
+          }).format(remaining);
         },
         enableHiding: true,
-        size: 140,
+        size: 130,
       },
       {
         accessorKey: "onHoldAmount",
@@ -365,12 +405,12 @@ export function AccountsTable({
           <SortableHeader column={column}>On Hold</SortableHeader>
         ),
         cell: ({ row }) => {
-          const onHoldAmount = row.getValue("onHoldAmount") as number;
-          if (onHoldAmount === 0) return "-";
+          const onHold = row.getValue("onHoldAmount") as number;
+          if (!onHold) return "-";
           return new Intl.NumberFormat("en-PH", {
             style: "currency",
             currency: "PHP",
-          }).format(onHoldAmount);
+          }).format(onHold);
         },
         enableHiding: true,
         size: 100,
@@ -437,6 +477,230 @@ export function AccountsTable({
         enableHiding: true,
         size: 180,
       },
+      // Loan specific columns
+      {
+        accessorKey: "originalLoanAmount",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Original Loan Amount</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const amount = row.getValue("originalLoanAmount") as number | null;
+          if (!amount) return "-";
+          return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(amount);
+        },
+        enableHiding: true,
+        size: 150,
+      },
+      {
+        accessorKey: "monthlyPaymentAmount",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Monthly Payment</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const payment = row.getValue("monthlyPaymentAmount") as number | null;
+          if (!payment) return "-";
+          return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(payment);
+        },
+        enableHiding: true,
+        size: 130,
+      },
+      {
+        accessorKey: "loanType",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Loan Type</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const type = row.getValue("loanType") as string | null;
+          if (!type) return "-";
+          return (
+            <Badge variant="secondary" className="capitalize">
+              {type}
+            </Badge>
+          );
+        },
+        enableHiding: true,
+        size: 120,
+      },
+      {
+        accessorKey: "loanStartDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Loan Start Date</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("loanStartDate") as string | null;
+          if (!date) return "-";
+          return dayjs(date).format("MMM D, YYYY");
+        },
+        enableHiding: true,
+        size: 130,
+      },
+      {
+        accessorKey: "maturityDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Maturity Date</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("maturityDate") as string | null;
+          if (!date) return "-";
+          return dayjs(date).format("MMM D, YYYY");
+        },
+        enableHiding: true,
+        size: 130,
+      },
+      {
+        accessorKey: "loanTermMonths",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Loan Term (Months)</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const term = row.getValue("loanTermMonths") as number | null;
+          if (!term) return "-";
+          return term;
+        },
+        enableHiding: true,
+        size: 140,
+      },
+      // Insurance specific columns
+      {
+        accessorKey: "policyType",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Policy Type</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const type = row.getValue("policyType") as string | null;
+          if (!type) return "-";
+          return (
+            <Badge variant="secondary" className="capitalize">
+              {type}
+            </Badge>
+          );
+        },
+        enableHiding: true,
+        size: 120,
+      },
+      {
+        accessorKey: "premiumAmount",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Premium Amount</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const premium = row.getValue("premiumAmount") as number | null;
+          if (!premium) return "-";
+          return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(premium);
+        },
+        enableHiding: true,
+        size: 130,
+      },
+      {
+        accessorKey: "premiumFrequency",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Premium Frequency</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const frequency = row.getValue("premiumFrequency") as string | null;
+          if (!frequency) return "-";
+          return frequency;
+        },
+        enableHiding: true,
+        size: 140,
+      },
+      {
+        accessorKey: "coverageAmount",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Coverage Amount</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const coverage = row.getValue("coverageAmount") as number | null;
+          if (!coverage) return "-";
+          return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(coverage);
+        },
+        enableHiding: true,
+        size: 140,
+      },
+      {
+        accessorKey: "policyStartDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Policy Start Date</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("policyStartDate") as string | null;
+          if (!date) return "-";
+          return dayjs(date).format("MMM D, YYYY");
+        },
+        enableHiding: true,
+        size: 140,
+      },
+      {
+        accessorKey: "policyEndDate",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Policy End Date</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("policyEndDate") as string | null;
+          if (!date) return "-";
+          return dayjs(date).format("MMM D, YYYY");
+        },
+        enableHiding: true,
+        size: 140,
+      },
+      // Optional fields
+      {
+        accessorKey: "accountNumber",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Account Number</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const number = row.getValue("accountNumber") as string | null;
+          if (!number) return "-";
+          return `****${number}`;
+        },
+        enableHiding: true,
+        size: 130,
+      },
+      {
+        accessorKey: "minimumBalance",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Minimum Balance</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const minimum = row.getValue("minimumBalance") as number | null;
+          if (!minimum) return "-";
+          return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(minimum);
+        },
+        enableHiding: true,
+        size: 140,
+      },
+      {
+        accessorKey: "monthlyMaintenanceFee",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Monthly Fee</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const fee = row.getValue("monthlyMaintenanceFee") as number | null;
+          if (!fee) return "-";
+          return new Intl.NumberFormat("en-PH", {
+            style: "currency",
+            currency: "PHP",
+          }).format(fee);
+        },
+        enableHiding: true,
+        size: 120,
+      },
       {
         accessorKey: "excludeFromBalances",
         header: ({ column }) => (
@@ -463,7 +727,7 @@ export function AccountsTable({
   );
 
   const table = useReactTable({
-    data: accounts,
+    data: filteredAccounts,
     columns: columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -571,6 +835,36 @@ export function AccountsTable({
 
   return (
     <div className="space-y-4">
+      {/* Active Filters Display */}
+      {accountTypeFilter.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+          {accountTypeFilter.map((type) => (
+            <Badge
+              key={type}
+              variant="secondary"
+              className="capitalize cursor-pointer hover:bg-secondary/80"
+              onClick={() => {
+                setAccountTypeFilter(
+                  accountTypeFilter.filter((t) => t !== type)
+                );
+              }}
+            >
+              {type}
+              <X className="ml-1 h-3 w-3" />
+            </Badge>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAccountTypeFilter([])}
+            className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2 w-full">
           <Input
@@ -583,13 +877,64 @@ export function AccountsTable({
           />
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Account Type Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-auto sm:ml-0">
+              <Button variant="outline" size="sm">
+                Account Types
+                {accountTypeFilter.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 rounded-sm px-1">
+                    {accountTypeFilter.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Filter by Account Type</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {accountTypeFilter.length > 0 && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setAccountTypeFilter([])}
+                    className="text-sm text-muted-foreground"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear filters
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {accountTypes.map((type) => (
+                <DropdownMenuCheckboxItem
+                  key={type}
+                  className="capitalize"
+                  checked={accountTypeFilter.includes(type)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setAccountTypeFilter([...accountTypeFilter, type]);
+                    } else {
+                      setAccountTypeFilter(
+                        accountTypeFilter.filter((t) => t !== type)
+                      );
+                    }
+                  }}
+                >
+                  {type}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Columns Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
                 Columns
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
@@ -609,6 +954,8 @@ export function AccountsTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Export Button */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -688,6 +1035,11 @@ export function AccountsTable({
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
+          {accountTypeFilter.length > 0 && (
+            <span className="ml-2">
+              ({filteredAccounts.length} of {accounts.length} accounts shown)
+            </span>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           <Button
