@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
+import { DynamicThemeColor } from "@/components/dynamic-theme-color";
 
 export const metadata: Metadata = {
   title: "Qwikfinx",
@@ -25,7 +26,6 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#000000",
 };
 
 export default function RootLayout({
@@ -42,6 +42,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <DynamicThemeColor />
           <Providers>{children}</Providers>
         </ThemeProvider>
         <Toaster richColors />
