@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { WalletMinimal } from "lucide-react";
+import { FullscreenLoader } from "@/components/fullscreen-loader";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
 
   const supabase = createBrowserClient(
@@ -25,13 +27,35 @@ export default function LoginPage() {
   // Check if user is already logged in and redirect to wallet
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        router.push("/wallet");
+      try {
+        setIsCheckingAuth(true);
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          // Continue to show login form
+          setIsCheckingAuth(false);
+          return;
+        }
+
+        if (session && session.user) {
+          // User is authenticated, redirect to dashboard
+          router.push("/wallet");
+          return;
+        }
+
+        // User is not authenticated, show login form
+        setIsCheckingAuth(false);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsCheckingAuth(false);
       }
     };
+
     checkUser();
   }, [router, supabase.auth]);
 
@@ -116,6 +140,11 @@ export default function LoginPage() {
       setOauthLoading(false);
     }
   };
+
+  // Show fullscreen loader while checking authentication
+  if (isCheckingAuth) {
+    return <FullscreenLoader message="Checking authentication..." />;
+  }
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
