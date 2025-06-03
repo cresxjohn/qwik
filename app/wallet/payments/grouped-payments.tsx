@@ -260,9 +260,9 @@ export function GroupedPayments({
             setIsPaymentInfoOpen(false);
           }
         }}
-        onDelete={(id) => {
+        onDelete={(payment) => {
           if (onDelete) {
-            onDelete(id);
+            onDelete(payment.id);
             setIsPaymentInfoOpen(false);
           }
         }}

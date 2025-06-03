@@ -756,7 +756,7 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         open={isInfoSheetOpen}
         onOpenChange={setIsInfoSheetOpen}
         onEdit={onEdit}
-        onDelete={handleDelete}
+        onDelete={(payment) => handleDelete(payment.id)}
       />
     </>
   );

@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,24 +15,19 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { useAccountsStore } from "@/store/accounts";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Account,
   AccountType,
-  LoanType,
   InsurancePolicyType,
+  LoanType,
 } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
+import { useAccountsStore } from "@/store/accounts";
+import { omit } from "lodash";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
 import { useCallback, useState } from "react";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ImportSheetProps {
   readonly open: boolean;
@@ -506,9 +507,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
         const chunk = previewData.slice(i, i + chunkSize);
 
         chunk.forEach((account) => {
-          // Remove id and remainingCreditLimit as they should be handled by the API
-          const { id, remainingCreditLimit, ...accountData } = account;
-          addAccount(accountData);
+          addAccount(omit(account, ["id", "remainingCreditLimit"]));
           imported++;
         });
 
@@ -939,7 +938,8 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                           Examples & Validation
                         </h4>
                         <p className="text-sm text-muted-foreground mb-3">
-                          Detailed examples for different account types and validation rules to ensure successful import.
+                          Detailed examples for different account types and
+                          validation rules to ensure successful import.
                         </p>
 
                         <Accordion
@@ -964,12 +964,15 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     High-Yield Savings Account
                                   </h5>
                                   <p className="text-sm text-muted-foreground">
-                                    Use this format for savings accounts with interest-bearing features.
-                                    Perfect for emergency funds, high-yield savings, or any deposit account
-                                    that earns interest over time.
+                                    Use this format for savings accounts with
+                                    interest-bearing features. Perfect for
+                                    emergency funds, high-yield savings, or any
+                                    deposit account that earns interest over
+                                    time.
                                   </p>
                                   <div className="mt-2 text-sm">
-                                    <strong>Example:</strong> RCBC Flex Gold savings account with ₱15,000 balance
+                                    <strong>Example:</strong> RCBC Flex Gold
+                                    savings account with ₱15,000 balance
                                   </div>
                                 </div>
                                 <div className="rounded-md border overflow-hidden">
@@ -1073,11 +1076,14 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     Credit Card with Outstanding Balance
                                   </h5>
                                   <p className="text-sm text-muted-foreground">
-                                    Use this format for credit cards with credit limits, statement dates,
-                                    and payment due dates. Balance should be negative to represent debt.
+                                    Use this format for credit cards with credit
+                                    limits, statement dates, and payment due
+                                    dates. Balance should be negative to
+                                    represent debt.
                                   </p>
                                   <div className="mt-2 text-sm">
-                                    <strong>Example:</strong> Security Bank Wave Card with ₱8,500 outstanding balance
+                                    <strong>Example:</strong> Security Bank Wave
+                                    Card with ₱8,500 outstanding balance
                                   </div>
                                 </div>
                                 <div className="rounded-md border overflow-hidden">
@@ -1180,7 +1186,10 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                             </AccordionContent>
                           </AccordionItem>
 
-                          <AccordionItem value="loan" className="border rounded-lg">
+                          <AccordionItem
+                            value="loan"
+                            className="border rounded-lg"
+                          >
                             <AccordionTrigger className="px-4 hover:no-underline">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
@@ -1194,12 +1203,16 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     Home Mortgage Loan
                                   </h5>
                                   <p className="text-sm text-muted-foreground">
-                                    Use this format for mortgages, auto loans, personal loans, or any
-                                    debt with structured payment terms. Include loan details like
-                                    original amount, payment schedule, and maturity date.
+                                    Use this format for mortgages, auto loans,
+                                    personal loans, or any debt with structured
+                                    payment terms. Include loan details like
+                                    original amount, payment schedule, and
+                                    maturity date.
                                   </p>
                                   <div className="mt-2 text-sm">
-                                    <strong>Example:</strong> 25-year home mortgage of ₱1,000,000 with ₱850,000 remaining
+                                    <strong>Example:</strong> 25-year home
+                                    mortgage of ₱1,000,000 with ₱850,000
+                                    remaining
                                   </div>
                                 </div>
                                 <div className="rounded-md border overflow-hidden">
@@ -1310,7 +1323,10 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                             </AccordionContent>
                           </AccordionItem>
 
-                          <AccordionItem value="insurance" className="border rounded-lg">
+                          <AccordionItem
+                            value="insurance"
+                            className="border rounded-lg"
+                          >
                             <AccordionTrigger className="px-4 hover:no-underline">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-purple-500"></div>
@@ -1324,12 +1340,14 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     Life Insurance Policy
                                   </h5>
                                   <p className="text-sm text-muted-foreground">
-                                    Use this format for insurance policies with cash values, premium
-                                    payments, and coverage amounts. Balance represents current cash value
-                                    or accumulated premiums paid.
+                                    Use this format for insurance policies with
+                                    cash values, premium payments, and coverage
+                                    amounts. Balance represents current cash
+                                    value or accumulated premiums paid.
                                   </p>
                                   <div className="mt-2 text-sm">
-                                    <strong>Example:</strong> ₱1,000,000 life insurance policy with ₱25,000 cash value
+                                    <strong>Example:</strong> ₱1,000,000 life
+                                    insurance policy with ₱25,000 cash value
                                   </div>
                                 </div>
                                 <div className="rounded-md border overflow-hidden">
@@ -1432,7 +1450,10 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                             </AccordionContent>
                           </AccordionItem>
 
-                          <AccordionItem value="validation" className="border rounded-lg">
+                          <AccordionItem
+                            value="validation"
+                            className="border rounded-lg"
+                          >
                             <AccordionTrigger className="px-4 hover:no-underline">
                               <div className="flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-orange-500"></div>
@@ -1446,7 +1467,8 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     Important Validation Rules
                                   </h5>
                                   <p className="text-sm text-orange-700">
-                                    Follow these rules to ensure successful account import and avoid common errors.
+                                    Follow these rules to ensure successful
+                                    account import and avoid common errors.
                                   </p>
                                 </div>
                                 <div className="space-y-3 text-sm">
@@ -1456,16 +1478,21 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     </div>
                                     <div className="text-blue-700 text-xs space-y-1">
                                       <div>
-                                        <strong>Account Number:</strong> Maximum 4 characters (last 4 digits only)
+                                        <strong>Account Number:</strong> Maximum
+                                        4 characters (last 4 digits only)
                                       </div>
                                       <div>
-                                        <strong>Statement Date:</strong> Must be between 1-31 (day of month)
+                                        <strong>Statement Date:</strong> Must be
+                                        between 1-31 (day of month)
                                       </div>
                                       <div>
-                                        <strong>Dates:</strong> Use YYYY-MM-DD format (e.g., 2024-03-22)
+                                        <strong>Dates:</strong> Use YYYY-MM-DD
+                                        format (e.g., 2024-03-22)
                                       </div>
                                       <div>
-                                        <strong>Boolean Fields:</strong> Use "true" or "false" (case-insensitive)
+                                        <strong>Boolean Fields:</strong> Use
+                                        &quot;true&quot; or &quot;false&quot;
+                                        (case-insensitive)
                                       </div>
                                     </div>
                                   </div>
@@ -1475,16 +1502,23 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     </div>
                                     <div className="text-green-700 text-xs space-y-1">
                                       <div>
-                                        <strong>Balance:</strong> Can be positive or negative (positive for assets, negative for debts)
+                                        <strong>Balance:</strong> Can be
+                                        positive or negative (positive for
+                                        assets, negative for debts)
                                       </div>
                                       <div>
-                                        <strong>Positive Amounts:</strong> originalLoanAmount, premiumAmount, coverageAmount must be > 0
+                                        <strong>Positive Amounts:</strong>{" "}
+                                        originalLoanAmount, premiumAmount,
+                                        coverageAmount must be &gt; 0
                                       </div>
                                       <div>
-                                        <strong>Non-negative:</strong> monthlyPaymentAmount, minimumBalance, fees must be ≥ 0
+                                        <strong>Non-negative:</strong>{" "}
+                                        monthlyPaymentAmount, minimumBalance,
+                                        fees must be ≥ 0
                                       </div>
                                       <div>
-                                        <strong>Format:</strong> Use decimal format (15000.00) not currency symbols
+                                        <strong>Format:</strong> Use decimal
+                                        format (15000.00) not currency symbols
                                       </div>
                                     </div>
                                   </div>
@@ -1494,13 +1528,17 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     </div>
                                     <div className="text-yellow-700 text-xs space-y-1">
                                       <div>
-                                        <strong>Loan Dates:</strong> maturityDate must be after loanStartDate
+                                        <strong>Loan Dates:</strong>{" "}
+                                        maturityDate must be after loanStartDate
                                       </div>
                                       <div>
-                                        <strong>Insurance Dates:</strong> policyEndDate must be after policyStartDate
+                                        <strong>Insurance Dates:</strong>{" "}
+                                        policyEndDate must be after
+                                        policyStartDate
                                       </div>
                                       <div>
-                                        <strong>Loan Term:</strong> loanTermMonths must be greater than 0
+                                        <strong>Loan Term:</strong>{" "}
+                                        loanTermMonths must be greater than 0
                                       </div>
                                     </div>
                                   </div>
@@ -1510,13 +1548,17 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                                     </div>
                                     <div className="text-purple-700 text-xs space-y-1">
                                       <div>
-                                        <strong>Loan Type:</strong> mortgage, auto, personal, student, business, other
+                                        <strong>Loan Type:</strong> mortgage,
+                                        auto, personal, student, business, other
                                       </div>
                                       <div>
-                                        <strong>Policy Type:</strong> life, health, auto, home, renters, disability, other
+                                        <strong>Policy Type:</strong> life,
+                                        health, auto, home, renters, disability,
+                                        other
                                       </div>
                                       <div>
-                                        <strong>Frequency:</strong> daily, weekly, monthly, quarterly, yearly
+                                        <strong>Frequency:</strong> daily,
+                                        weekly, monthly, quarterly, yearly
                                       </div>
                                     </div>
                                   </div>

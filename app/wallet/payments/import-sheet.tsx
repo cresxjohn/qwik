@@ -1,5 +1,12 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,29 +16,23 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { usePaymentsStore } from "@/store/payments";
-import { useAccountsStore } from "@/store/accounts";
-import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
+import { cn } from "@/lib/utils";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Payment,
-  RecurrencePattern,
-  PaymentType,
-  PaymentConfirmationType,
   FrequencyType,
   MonthlyType,
+  Payment,
+  PaymentConfirmationType,
+  PaymentType,
+  RecurrencePattern,
 } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
+import { useAccountsStore } from "@/store/accounts";
+import { usePaymentsStore } from "@/store/payments";
 import dayjs from "dayjs";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
 import { useCallback, useState } from "react";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
 interface ImportSheetProps {
   readonly open: boolean;
@@ -77,467 +78,476 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
     document.body.removeChild(a);
   };
 
-  const validateRow = (
-    row: Record<string, string>,
-    index: number
-  ): string[] => {
-    const errors: string[] = [];
+  const validateRow = useCallback(
+    (row: Record<string, string>, index: number): string[] => {
+      const errors: string[] = [];
 
-    // Check if row is empty (all fields are empty)
-    const hasAnyValue = Object.values(row).some((value) => value.trim() !== "");
-    if (!hasAnyValue) {
-      return []; // Skip empty rows silently
-    }
-
-    // Check required fields
-    REQUIRED_FIELDS.forEach((field) => {
-      if (!row[field]?.trim()) {
-        errors.push(`Row ${index + 1}: ${field} is required`);
+      // Check if row is empty (all fields are empty)
+      const hasAnyValue = Object.values(row).some(
+        (value) => value.trim() !== ""
+      );
+      if (!hasAnyValue) {
+        return []; // Skip empty rows silently
       }
-    });
 
-    // Validate amount
-    if (row.amount) {
-      const amount = Number(row.amount);
-      if (isNaN(amount)) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: amount must be a valid number (e.g., 15.99 or 1500). Got: "${
-            row.amount
-          }"`
-        );
-      } else if (amount <= 0) {
-        errors.push(
-          `Row ${index + 1}: amount must be greater than 0. Got: ${amount}`
-        );
-      } else if (amount > 999999999) {
-        errors.push(
-          `Row ${index + 1}: amount is too large. Maximum allowed: 999,999,999`
-        );
-      }
-    }
+      // Check required fields
+      REQUIRED_FIELDS.forEach((field) => {
+        if (!row[field]?.trim()) {
+          errors.push(`Row ${index + 1}: ${field} is required`);
+        }
+      });
 
-    // Validate dates
-    if (row.startDate) {
-      const startDate = dayjs(row.startDate.trim(), "YYYY-MM-DD", true);
-      if (!startDate.isValid()) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: startDate must be a valid date in YYYY-MM-DD format (e.g., 2024-03-22). Got: "${
-            row.startDate
-          }"`
-        );
-      } else {
-        // Check if date is not too far in the past or future
-        const now = dayjs();
-        const yearsDiff = Math.abs(now.diff(startDate, "year"));
-        if (yearsDiff > 50) {
+      // Validate amount
+      if (row.amount) {
+        const amount = Number(row.amount);
+        if (isNaN(amount)) {
           errors.push(
             `Row ${
               index + 1
-            }: startDate seems unrealistic (${yearsDiff} years from now). Please check the date.`
+            }: amount must be a valid number (e.g., 15.99 or 1500). Got: "${
+              row.amount
+            }"`
+          );
+        } else if (amount <= 0) {
+          errors.push(
+            `Row ${index + 1}: amount must be greater than 0. Got: ${amount}`
+          );
+        } else if (amount > 999999999) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: amount is too large. Maximum allowed: 999,999,999`
           );
         }
       }
-    }
 
-    if (row.endDate && row.endDateType === "date") {
-      const endDate = dayjs(row.endDate.trim(), "YYYY-MM-DD", true);
-      if (!endDate.isValid()) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: endDate must be a valid date in YYYY-MM-DD format (e.g., 2024-04-22). Got: "${
-            row.endDate
-          }"`
-        );
-      } else if (row.startDate) {
+      // Validate dates
+      if (row.startDate) {
         const startDate = dayjs(row.startDate.trim(), "YYYY-MM-DD", true);
-        if (startDate.isValid() && endDate.isBefore(startDate)) {
-          errors.push(
-            `Row ${index + 1}: endDate (${
-              row.endDate
-            }) cannot be before startDate (${row.startDate})`
-          );
-        }
-      }
-    }
-
-    // Validate frequency if provided
-    if (
-      row.frequency &&
-      !["daily", "weekly", "monthly", "yearly"].includes(
-        row.frequency.toLowerCase()
-      )
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: frequency must be one of: daily, weekly, monthly, yearly (case-insensitive). Got: "${
-          row.frequency
-        }"`
-      );
-    }
-
-    // Validate paymentType
-    if (
-      row.paymentType &&
-      !["income", "expense", "transfer"].includes(row.paymentType.toLowerCase())
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: paymentType must be one of: income, expense, transfer (case-insensitive). Got: "${
-          row.paymentType
-        }"`
-      );
-    }
-
-    // Validate confirmationType
-    if (
-      row.confirmationType &&
-      !["manual", "automatic"].includes(row.confirmationType.toLowerCase())
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: confirmationType must be one of: manual, automatic (case-insensitive). Got: "${
-          row.confirmationType
-        }"`
-      );
-    }
-
-    // Validate recurring field
-    if (
-      row.recurring &&
-      !["true", "false"].includes(row.recurring.toLowerCase())
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: recurring must be true or false (case-insensitive). Got: "${
-          row.recurring
-        }"`
-      );
-    }
-
-    // Validate interval (must be positive number)
-    if (row.interval && row.interval.trim() !== "") {
-      const interval = Number(row.interval);
-      if (isNaN(interval) || interval <= 0) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: interval must be a positive number (1, 2, 3, etc.). Got: "${
-            row.interval
-          }"`
-        );
-      } else if (interval > 100) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: interval seems too large (${interval}). Maximum recommended: 100`
-        );
-      }
-    }
-
-    // Validate weeklyDays format (comma-separated numbers 0-6)
-    if (row.weeklyDays && row.weeklyDays.trim() !== "") {
-      const days = row.weeklyDays.split(",").map((d) => d.trim());
-      const validDays = new Set();
-      for (const day of days) {
-        const dayNum = Number(day);
-        if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) {
+        if (!startDate.isValid()) {
           errors.push(
             `Row ${
               index + 1
-            }: weeklyDays must contain numbers 0-6 (0=Sunday, 6=Saturday). Invalid value: "${day}"`
+            }: startDate must be a valid date in YYYY-MM-DD format (e.g., 2024-03-22). Got: "${
+              row.startDate
+            }"`
           );
-          break;
+        } else {
+          // Check if date is not too far in the past or future
+          const now = dayjs();
+          const yearsDiff = Math.abs(now.diff(startDate, "year"));
+          if (yearsDiff > 50) {
+            errors.push(
+              `Row ${
+                index + 1
+              }: startDate seems unrealistic (${yearsDiff} years from now). Please check the date.`
+            );
+          }
         }
-        if (validDays.has(dayNum)) {
+      }
+
+      if (row.endDate && row.endDateType === "date") {
+        const endDate = dayjs(row.endDate.trim(), "YYYY-MM-DD", true);
+        if (!endDate.isValid()) {
           errors.push(
-            `Row ${index + 1}: weeklyDays contains duplicate day: ${dayNum}`
+            `Row ${
+              index + 1
+            }: endDate must be a valid date in YYYY-MM-DD format (e.g., 2024-04-22). Got: "${
+              row.endDate
+            }"`
           );
-          break;
+        } else if (row.startDate) {
+          const startDate = dayjs(row.startDate.trim(), "YYYY-MM-DD", true);
+          if (startDate.isValid() && endDate.isBefore(startDate)) {
+            errors.push(
+              `Row ${index + 1}: endDate (${
+                row.endDate
+              }) cannot be before startDate (${row.startDate})`
+            );
+          }
         }
-        validDays.add(dayNum);
       }
-    }
 
-    // Validate monthlyType
-    if (
-      row.monthlyType &&
-      !["date", "day"].includes(row.monthlyType.toLowerCase())
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: monthlyType must be "date" or "day" (case-insensitive). Got: "${
-          row.monthlyType
-        }"`
-      );
-    }
-
-    // Validate monthlyDay (1-31)
-    if (row.monthlyDay && row.monthlyDay.trim() !== "") {
-      const day = Number(row.monthlyDay);
-      if (isNaN(day) || day < 1 || day > 31) {
-        errors.push(
-          `Row ${index + 1}: monthlyDay must be between 1 and 31. Got: "${
-            row.monthlyDay
-          }"`
-        );
-      }
-    }
-
-    // Validate monthlyWeek (-1, 1-4)
-    if (row.monthlyWeek && row.monthlyWeek.trim() !== "") {
-      const week = Number(row.monthlyWeek);
-      if (isNaN(week) || ((week < 1 || week > 4) && week !== -1)) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: monthlyWeek must be 1-4 (first to fourth) or -1 (last). Got: "${
-            row.monthlyWeek
-          }"`
-        );
-      }
-    }
-
-    // Validate monthlyWeekDay (0-6)
-    if (row.monthlyWeekDay && row.monthlyWeekDay.trim() !== "") {
-      const weekDay = Number(row.monthlyWeekDay);
-      if (isNaN(weekDay) || weekDay < 0 || weekDay > 6) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: monthlyWeekDay must be between 0 and 6 (0=Sunday, 6=Saturday). Got: "${
-            row.monthlyWeekDay
-          }"`
-        );
-      }
-    }
-
-    // Validate numberOfEvents
-    if (row.numberOfEvents && row.numberOfEvents.trim() !== "") {
-      const numEvents = Number(row.numberOfEvents);
-      if (isNaN(numEvents) || numEvents <= 0) {
-        errors.push(
-          `Row ${index + 1}: numberOfEvents must be a positive number. Got: "${
-            row.numberOfEvents
-          }"`
-        );
-      } else if (numEvents > 1000) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: numberOfEvents seems too large (${numEvents}). Maximum recommended: 1000`
-        );
-      }
-    }
-
-    // Validate transfer-specific requirements
-    if (row.paymentType === "transfer" && !row.toAccount?.trim()) {
-      errors.push(
-        `Row ${index + 1}: toAccount is required for transfer payments`
-      );
-    }
-
-    // Validate that toAccount is different from account for transfers
-    if (
-      row.paymentType === "transfer" &&
-      row.toAccount?.trim() &&
-      row.account?.trim()
-    ) {
+      // Validate frequency if provided
       if (
-        row.account.trim().toLowerCase() === row.toAccount.trim().toLowerCase()
-      ) {
-        errors.push(
-          `Row ${
-            index + 1
-          }: toAccount cannot be the same as account for transfers`
-        );
-      }
-    }
-
-    // Validate endDateType and related fields
-    if (row.endDateType) {
-      if (
-        !["forever", "numberofevents", "date"].includes(
-          row.endDateType.toLowerCase()
+        row.frequency &&
+        !["daily", "weekly", "monthly", "yearly"].includes(
+          row.frequency.toLowerCase()
         )
       ) {
         errors.push(
           `Row ${
             index + 1
-          }: endDateType must be one of: forever, numberOfEvents, date (case-insensitive). Got: "${
-            row.endDateType
+          }: frequency must be one of: daily, weekly, monthly, yearly (case-insensitive). Got: "${
+            row.frequency
           }"`
         );
-      } else {
-        switch (row.endDateType.toLowerCase()) {
-          case "numberOfEvents":
-            if (!row.numberOfEvents || isNaN(Number(row.numberOfEvents))) {
-              errors.push(
-                `Row ${
-                  index + 1
-                }: numberOfEvents must be a number when endDateType is "numberOfEvents"`
-              );
-            }
-            break;
-          case "date":
-            if (!row.endDate) {
-              errors.push(
-                `Row ${
-                  index + 1
-                }: endDate is required when endDateType is "date"`
-              );
-            }
-            break;
-        }
       }
-    }
 
-    // Validate recurring payment consistency
-    if (row.recurring?.toLowerCase() === "true") {
-      if (!row.frequency) {
+      // Validate paymentType
+      if (
+        row.paymentType &&
+        !["income", "expense", "transfer"].includes(
+          row.paymentType.toLowerCase()
+        )
+      ) {
         errors.push(
-          `Row ${index + 1}: frequency is required when recurring is true`
+          `Row ${
+            index + 1
+          }: paymentType must be one of: income, expense, transfer (case-insensitive). Got: "${
+            row.paymentType
+          }"`
         );
       }
 
-      // Validate monthly-specific combinations
-      if (row.frequency?.toLowerCase() === "monthly") {
-        if (row.monthlyType?.toLowerCase() === "date" && !row.monthlyDay) {
+      // Validate confirmationType
+      if (
+        row.confirmationType &&
+        !["manual", "automatic"].includes(row.confirmationType.toLowerCase())
+      ) {
+        errors.push(
+          `Row ${
+            index + 1
+          }: confirmationType must be one of: manual, automatic (case-insensitive). Got: "${
+            row.confirmationType
+          }"`
+        );
+      }
+
+      // Validate recurring field
+      if (
+        row.recurring &&
+        !["true", "false"].includes(row.recurring.toLowerCase())
+      ) {
+        errors.push(
+          `Row ${
+            index + 1
+          }: recurring must be true or false (case-insensitive). Got: "${
+            row.recurring
+          }"`
+        );
+      }
+
+      // Validate interval (must be positive number)
+      if (row.interval && row.interval.trim() !== "") {
+        const interval = Number(row.interval);
+        if (isNaN(interval) || interval <= 0) {
           errors.push(
             `Row ${
               index + 1
-            }: monthlyDay is required when monthlyType is "date"`
+            }: interval must be a positive number (1, 2, 3, etc.). Got: "${
+              row.interval
+            }"`
+          );
+        } else if (interval > 100) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: interval seems too large (${interval}). Maximum recommended: 100`
           );
         }
+      }
+
+      // Validate weeklyDays format (comma-separated numbers 0-6)
+      if (row.weeklyDays && row.weeklyDays.trim() !== "") {
+        const days = row.weeklyDays.split(",").map((d) => d.trim());
+        const validDays = new Set();
+        for (const day of days) {
+          const dayNum = Number(day);
+          if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) {
+            errors.push(
+              `Row ${
+                index + 1
+              }: weeklyDays must contain numbers 0-6 (0=Sunday, 6=Saturday). Invalid value: "${day}"`
+            );
+            break;
+          }
+          if (validDays.has(dayNum)) {
+            errors.push(
+              `Row ${index + 1}: weeklyDays contains duplicate day: ${dayNum}`
+            );
+            break;
+          }
+          validDays.add(dayNum);
+        }
+      }
+
+      // Validate monthlyType
+      if (
+        row.monthlyType &&
+        !["date", "day"].includes(row.monthlyType.toLowerCase())
+      ) {
+        errors.push(
+          `Row ${
+            index + 1
+          }: monthlyType must be "date" or "day" (case-insensitive). Got: "${
+            row.monthlyType
+          }"`
+        );
+      }
+
+      // Validate monthlyDay (1-31)
+      if (row.monthlyDay && row.monthlyDay.trim() !== "") {
+        const day = Number(row.monthlyDay);
+        if (isNaN(day) || day < 1 || day > 31) {
+          errors.push(
+            `Row ${index + 1}: monthlyDay must be between 1 and 31. Got: "${
+              row.monthlyDay
+            }"`
+          );
+        }
+      }
+
+      // Validate monthlyWeek (-1, 1-4)
+      if (row.monthlyWeek && row.monthlyWeek.trim() !== "") {
+        const week = Number(row.monthlyWeek);
+        if (isNaN(week) || ((week < 1 || week > 4) && week !== -1)) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: monthlyWeek must be 1-4 (first to fourth) or -1 (last). Got: "${
+              row.monthlyWeek
+            }"`
+          );
+        }
+      }
+
+      // Validate monthlyWeekDay (0-6)
+      if (row.monthlyWeekDay && row.monthlyWeekDay.trim() !== "") {
+        const weekDay = Number(row.monthlyWeekDay);
+        if (isNaN(weekDay) || weekDay < 0 || weekDay > 6) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: monthlyWeekDay must be between 0 and 6 (0=Sunday, 6=Saturday). Got: "${
+              row.monthlyWeekDay
+            }"`
+          );
+        }
+      }
+
+      // Validate numberOfEvents
+      if (row.numberOfEvents && row.numberOfEvents.trim() !== "") {
+        const numEvents = Number(row.numberOfEvents);
+        if (isNaN(numEvents) || numEvents <= 0) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: numberOfEvents must be a positive number. Got: "${
+              row.numberOfEvents
+            }"`
+          );
+        } else if (numEvents > 1000) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: numberOfEvents seems too large (${numEvents}). Maximum recommended: 1000`
+          );
+        }
+      }
+
+      // Validate transfer-specific requirements
+      if (row.paymentType === "transfer" && !row.toAccount?.trim()) {
+        errors.push(
+          `Row ${index + 1}: toAccount is required for transfer payments`
+        );
+      }
+
+      // Validate that toAccount is different from account for transfers
+      if (
+        row.paymentType === "transfer" &&
+        row.toAccount?.trim() &&
+        row.account?.trim()
+      ) {
         if (
-          row.monthlyType?.toLowerCase() === "day" &&
-          (!row.monthlyWeek || !row.monthlyWeekDay)
+          row.account.trim().toLowerCase() ===
+          row.toAccount.trim().toLowerCase()
         ) {
           errors.push(
             `Row ${
               index + 1
-            }: monthlyWeek and monthlyWeekDay are required when monthlyType is "day"`
+            }: toAccount cannot be the same as account for transfers`
           );
         }
       }
 
-      // Validate weekly-specific combinations
-      if (row.frequency?.toLowerCase() === "weekly" && !row.weeklyDays) {
+      // Validate endDateType and related fields
+      if (row.endDateType) {
+        if (
+          !["forever", "numberofevents", "date"].includes(
+            row.endDateType.toLowerCase()
+          )
+        ) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: endDateType must be one of: forever, numberOfEvents, date (case-insensitive). Got: "${
+              row.endDateType
+            }"`
+          );
+        } else {
+          switch (row.endDateType.toLowerCase()) {
+            case "numberOfEvents":
+              if (!row.numberOfEvents || isNaN(Number(row.numberOfEvents))) {
+                errors.push(
+                  `Row ${
+                    index + 1
+                  }: numberOfEvents must be a number when endDateType is "numberOfEvents"`
+                );
+              }
+              break;
+            case "date":
+              if (!row.endDate) {
+                errors.push(
+                  `Row ${
+                    index + 1
+                  }: endDate is required when endDateType is "date"`
+                );
+              }
+              break;
+          }
+        }
+      }
+
+      // Validate recurring payment consistency
+      if (row.recurring?.toLowerCase() === "true") {
+        if (!row.frequency) {
+          errors.push(
+            `Row ${index + 1}: frequency is required when recurring is true`
+          );
+        }
+
+        // Validate monthly-specific combinations
+        if (row.frequency?.toLowerCase() === "monthly") {
+          if (row.monthlyType?.toLowerCase() === "date" && !row.monthlyDay) {
+            errors.push(
+              `Row ${
+                index + 1
+              }: monthlyDay is required when monthlyType is "date"`
+            );
+          }
+          if (
+            row.monthlyType?.toLowerCase() === "day" &&
+            (!row.monthlyWeek || !row.monthlyWeekDay)
+          ) {
+            errors.push(
+              `Row ${
+                index + 1
+              }: monthlyWeek and monthlyWeekDay are required when monthlyType is "day"`
+            );
+          }
+        }
+
+        // Validate weekly-specific combinations
+        if (row.frequency?.toLowerCase() === "weekly" && !row.weeklyDays) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: weeklyDays is recommended for weekly recurring payments`
+          );
+        }
+      }
+
+      // Validate field length limits
+      if (row.name && row.name.length > 100) {
+        errors.push(
+          `Row ${index + 1}: name is too long (${
+            row.name.length
+          } characters). Maximum: 100`
+        );
+      }
+      if (row.account && row.account.length > 50) {
+        errors.push(
+          `Row ${index + 1}: account name is too long (${
+            row.account.length
+          } characters). Maximum: 50`
+        );
+      }
+      if (row.toAccount && row.toAccount.length > 50) {
+        errors.push(
+          `Row ${index + 1}: toAccount name is too long (${
+            row.toAccount.length
+          } characters). Maximum: 50`
+        );
+      }
+      if (row.category && row.category.length > 50) {
+        errors.push(
+          `Row ${index + 1}: category is too long (${
+            row.category.length
+          } characters). Maximum: 50`
+        );
+      }
+      if (row.notes && row.notes.length > 500) {
+        errors.push(
+          `Row ${index + 1}: notes is too long (${
+            row.notes.length
+          } characters). Maximum: 500`
+        );
+      }
+
+      // Validate URL format for link field
+      if (row.link && row.link.trim() !== "") {
+        try {
+          new URL(row.link);
+        } catch {
+          errors.push(
+            `Row ${
+              index + 1
+            }: link must be a valid URL (e.g., https://example.com). Got: "${
+              row.link
+            }"`
+          );
+        }
+      }
+
+      // Validate account and toAccount format (no leading/trailing spaces)
+      if (
+        row.account &&
+        (row.account.startsWith(" ") || row.account.endsWith(" "))
+      ) {
         errors.push(
           `Row ${
             index + 1
-          }: weeklyDays is recommended for weekly recurring payments`
+          }: account name has leading or trailing spaces. Please trim whitespace.`
         );
       }
-    }
-
-    // Validate field length limits
-    if (row.name && row.name.length > 100) {
-      errors.push(
-        `Row ${index + 1}: name is too long (${
-          row.name.length
-        } characters). Maximum: 100`
-      );
-    }
-    if (row.account && row.account.length > 50) {
-      errors.push(
-        `Row ${index + 1}: account name is too long (${
-          row.account.length
-        } characters). Maximum: 50`
-      );
-    }
-    if (row.toAccount && row.toAccount.length > 50) {
-      errors.push(
-        `Row ${index + 1}: toAccount name is too long (${
-          row.toAccount.length
-        } characters). Maximum: 50`
-      );
-    }
-    if (row.category && row.category.length > 50) {
-      errors.push(
-        `Row ${index + 1}: category is too long (${
-          row.category.length
-        } characters). Maximum: 50`
-      );
-    }
-    if (row.notes && row.notes.length > 500) {
-      errors.push(
-        `Row ${index + 1}: notes is too long (${
-          row.notes.length
-        } characters). Maximum: 500`
-      );
-    }
-
-    // Validate URL format for link field
-    if (row.link && row.link.trim() !== "") {
-      try {
-        new URL(row.link);
-      } catch {
+      if (
+        row.toAccount &&
+        (row.toAccount.startsWith(" ") || row.toAccount.endsWith(" "))
+      ) {
         errors.push(
           `Row ${
             index + 1
-          }: link must be a valid URL (e.g., https://example.com). Got: "${
-            row.link
-          }"`
+          }: toAccount name has leading or trailing spaces. Please trim whitespace.`
         );
       }
-    }
 
-    // Validate account and toAccount format (no leading/trailing spaces)
-    if (
-      row.account &&
-      (row.account.startsWith(" ") || row.account.endsWith(" "))
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: account name has leading or trailing spaces. Please trim whitespace.`
-      );
-    }
-    if (
-      row.toAccount &&
-      (row.toAccount.startsWith(" ") || row.toAccount.endsWith(" "))
-    ) {
-      errors.push(
-        `Row ${
-          index + 1
-        }: toAccount name has leading or trailing spaces. Please trim whitespace.`
-      );
-    }
+      // Validate account names exist in the user's accounts
+      const accountNames = accounts.map((acc) => acc.name);
+      if (row.account && !accountNames.includes(row.account.trim())) {
+        errors.push(
+          `Row ${index + 1}: account "${
+            row.account
+          }" does not exist. Available accounts: ${accountNames.join(", ")}`
+        );
+      }
 
-    // Validate account names exist in the user's accounts
-    const accountNames = accounts.map((acc) => acc.name);
-    if (row.account && !accountNames.includes(row.account.trim())) {
-      errors.push(
-        `Row ${index + 1}: account "${
-          row.account
-        }" does not exist. Available accounts: ${accountNames.join(", ")}`
-      );
-    }
+      if (
+        row.toAccount &&
+        row.toAccount.trim() &&
+        !accountNames.includes(row.toAccount.trim())
+      ) {
+        errors.push(
+          `Row ${index + 1}: toAccount "${
+            row.toAccount
+          }" does not exist. Available accounts: ${accountNames.join(", ")}`
+        );
+      }
 
-    if (
-      row.toAccount &&
-      row.toAccount.trim() &&
-      !accountNames.includes(row.toAccount.trim())
-    ) {
-      errors.push(
-        `Row ${index + 1}: toAccount "${
-          row.toAccount
-        }" does not exist. Available accounts: ${accountNames.join(", ")}`
-      );
-    }
-
-    return errors;
-  };
+      return errors;
+    },
+    [accounts]
+  );
 
   const handleFile = useCallback(
     () => async (file: File) => {
@@ -821,7 +831,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
         setLoading(false);
       }
     },
-    [accounts]
+    [validateRow]
   );
 
   const handleImport = () => {
