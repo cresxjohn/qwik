@@ -104,6 +104,22 @@ const getProgressBarColor = (type: string) => {
   }
 };
 
+const formatInterestFrequency = (frequency: string) => {
+  const formatted = frequency.toLowerCase();
+  switch (formatted) {
+    case "daily":
+      return "per day";
+    case "monthly":
+      return "per month";
+    case "quarterly":
+      return "per quarter";
+    case "yearly":
+      return "per year";
+    default:
+      return formatted;
+  }
+};
+
 export function AccountsCardView({
   accounts,
   onEdit,
@@ -305,9 +321,9 @@ export function AccountsCardView({
                             <p className="font-semibold">
                               {account.interestRate.toFixed(2)}%
                               {account.interestFrequency &&
-                                ` ${account.interestFrequency
-                                  .toLowerCase()
-                                  .replace("yearly", "per year")}`}
+                                ` ${formatInterestFrequency(
+                                  account.interestFrequency
+                                )}`}
                             </p>
                           </div>
                         )}
@@ -372,9 +388,9 @@ export function AccountsCardView({
                           <p className="font-semibold">
                             {account.interestRate.toFixed(2)}%
                             {account.interestFrequency &&
-                              ` ${account.interestFrequency
-                                .toLowerCase()
-                                .replace("yearly", "per year")}`}
+                              ` ${formatInterestFrequency(
+                                account.interestFrequency
+                              )}`}
                           </p>
                         </div>
                       </div>
