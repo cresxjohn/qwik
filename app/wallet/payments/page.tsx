@@ -83,12 +83,12 @@ export default function PaymentsPage() {
               <Button variant="outline" onClick={() => setIsImportOpen(true)}>
                 Import
               </Button>
-              <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+              <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>
             </div>
           </div>
           {/* Buttons for smaller screens */}
           <div className="flex sm:hidden gap-2 my-4">
-            <Button onClick={() => setIsCreateOpen(true)}>Add Account</Button>
+            <Button onClick={() => setIsCreateOpen(true)}>Add Payment</Button>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               Import
             </Button>
