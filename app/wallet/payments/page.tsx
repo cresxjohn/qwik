@@ -124,7 +124,7 @@ export default function PaymentsPage() {
         </Tabs>
 
         <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+          <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
             <SheetHeader className="p-4">
               <SheetTitle>Create Payment</SheetTitle>
             </SheetHeader>
@@ -139,7 +139,7 @@ export default function PaymentsPage() {
           open={!!editingPayment}
           onOpenChange={(open) => !open && setEditingPayment(undefined)}
         >
-          <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+          <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
             <SheetHeader className="p-4">
               <SheetTitle>Edit Payment</SheetTitle>
             </SheetHeader>

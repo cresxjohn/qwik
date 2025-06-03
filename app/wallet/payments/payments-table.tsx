@@ -65,7 +65,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatCurrency } from "@/shared/utils";
+import { formatCurrency, formatRecurrencePattern } from "@/shared/utils";
 
 const SortableHeader = ({
   column,
@@ -112,6 +112,8 @@ const formatColumnName = (columnId: string) => {
       return "Next Due";
     case "endDate":
       return "End Date";
+    case "confirmationType":
+      return "Confirmation";
     default:
       // Convert camelCase to normal case with first letter capitalized
       return columnId
@@ -128,8 +130,17 @@ interface ActionCellProps {
 
 const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
   const payment = row.original;
+  const paymentsStore = usePaymentsStore();
   const onEdit = (table.options.meta as { onEdit?: (payment: Payment) => void })
     ?.onEdit;
+
+  const handleMarkCompleted = () => {
+    paymentsStore.markPaymentCompleted(payment.id);
+    // Show success message
+    import("sonner").then(({ toast }) => {
+      toast.success(`Marked "${payment.name}" as completed`);
+    });
+  };
 
   return (
     <DropdownMenu>
@@ -146,7 +157,9 @@ const ActionCell = ({ row, table, onDelete }: ActionCellProps) => {
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Make transaction</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleMarkCompleted}>
+          Mark as completed
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onEdit?.(payment)}>
           Edit payment
         </DropdownMenuItem>
@@ -324,13 +337,48 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         },
       },
       {
+        accessorKey: "confirmationType",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Confirmation</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const confirmationType = row.getValue("confirmationType") as string;
+          const isManual = confirmationType === "manual";
+          return (
+            <Badge
+              variant={isManual ? "secondary" : "outline"}
+              className={
+                isManual
+                  ? "bg-orange-100 text-orange-800"
+                  : "bg-green-100 text-green-800"
+              }
+            >
+              {isManual ? "Manual" : "Automatic"}
+            </Badge>
+          );
+        },
+        enableHiding: true,
+        size: 100,
+      },
+      {
         accessorKey: "frequency",
         header: ({ column }) => (
           <SortableHeader column={column}>Frequency</SortableHeader>
         ),
         cell: ({ row }) => {
-          const frequency = row.getValue("frequency") as string;
-          return <span className="capitalize">{frequency}</span>;
+          const payment = row.original;
+          if (!payment.recurring) return null;
+
+          if (payment.recurrence) {
+            return <span>{formatRecurrencePattern(payment.recurrence)}</span>;
+          } else if ("frequency" in payment && payment.frequency) {
+            // Handle legacy frequency
+            return (
+              <span className="capitalize">{payment.frequency as string}</span>
+            );
+          }
+
+          return <span>Recurring</span>;
         },
         enableHiding: true,
         size: 100,
@@ -343,7 +391,16 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         cell: ({ row }) => {
           const date = row.getValue("endDate");
           const recurring = row.original.recurring;
-          if (!recurring || !date) return null;
+
+          // Show nothing for non-recurring payments
+          if (!recurring) return null;
+
+          // Show "Forever" for recurring payments without an end date
+          if (!date) {
+            return <div className="text-muted-foreground">Forever</div>;
+          }
+
+          // Show formatted date for recurring payments with an end date
           const parsedDate =
             date instanceof Date ? date : new Date(date as string);
           if (isNaN(parsedDate.getTime())) return "Invalid date";
@@ -494,11 +551,22 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
               return Number(value).toFixed(2);
             }
             if (["startDate", "endDate", "nextDueDate"].includes(column.id)) {
+              // Handle endDate specially for recurring payments
+              if (column.id === "endDate") {
+                const payment = row.original;
+                if (!payment.recurring) return "";
+                if (!value) return "Forever";
+                return dayjs(value as Date).format("YYYY-MM-DD");
+              }
               return dayjs(value as Date).format("YYYY-MM-DD");
             }
             if (column.id === "tags") {
               // Join tags with underscore
               return (value as string[]).join(";");
+            }
+            if (column.id === "confirmationType") {
+              // Capitalize confirmation type for CSV
+              return value === "manual" ? "Manual" : "Automatic";
             }
             return value;
           })

@@ -18,8 +18,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Frequency, Payment } from "@/shared/types";
-import { formatCurrency } from "@/shared/utils";
+import { Frequency, Payment, RecurrencePattern } from "@/shared/types";
+import { formatCurrency, legacyToRecurrencePattern } from "@/shared/utils";
 import dayjs from "dayjs";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -355,11 +355,18 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
               }
             }
 
+            // Convert legacy frequency to new recurrence pattern if present
+            let recurrence: RecurrencePattern | undefined;
+            if (rowData.frequency) {
+              recurrence = legacyToRecurrencePattern(
+                rowData.frequency as Frequency
+              );
+            }
+
             validPayments.push({
               id: uuidv4(),
               name: rowData.name,
               amount: Number(rowData.amount),
-              frequency: rowData.frequency as Frequency | undefined,
               account: rowData.account,
               toAccount: rowData.toAccount || undefined,
               category: rowData.category,
@@ -370,6 +377,7 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
               notes: rowData.notes || undefined,
               attachments: [],
               recurring: !!rowData.frequency,
+              recurrence,
               paymentType: "expense",
               paymentDate: startDate,
               lastPaymentDate: startDate,
@@ -587,12 +595,12 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
                           <span className="text-muted-foreground">Start:</span>{" "}
                           {dayjs(payment.startDate).format("MMM D, YYYY")}
                         </div>
-                        {payment.frequency && (
+                        {payment.recurrence && (
                           <div>
                             <span className="text-muted-foreground">
                               Frequency:
                             </span>{" "}
-                            {payment.frequency}
+                            {payment.recurrence.frequency}
                           </div>
                         )}
                         {payment.endDate && (

@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Payment } from "@/shared/types";
-import { formatCurrency } from "@/shared/utils";
+import { formatCurrency, formatRecurrencePattern } from "@/shared/utils";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -219,9 +219,24 @@ export function GroupedPayments({
                         )}
                         {payment.recurring && (
                           <span className="text-primary">
-                            {payment.frequency}
+                            {payment.recurrence
+                              ? formatRecurrencePattern(payment.recurrence)
+                              : "frequency" in payment && payment.frequency
+                              ? (payment.frequency as string)
+                              : "Recurring"}
                           </span>
                         )}
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            payment.confirmationType === "manual"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {payment.confirmationType === "manual"
+                            ? "Manual"
+                            : "Auto"}
+                        </span>
                       </div>
                     </div>
                     <p className="font-mono">

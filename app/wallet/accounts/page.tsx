@@ -242,9 +242,9 @@ export default function Page() {
 
       {/* Create Account Sheet */}
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
           <SheetHeader className="p-4">
-            <SheetTitle>Create Account</SheetTitle>
+            <SheetTitle>Create New Account</SheetTitle>
           </SheetHeader>
           <AccountForm
             onCancel={() => setIsCreateOpen(false)}
@@ -258,7 +258,7 @@ export default function Page() {
         open={!!editingAccount}
         onOpenChange={(open) => !open && setEditingAccount(undefined)}
       >
-        <SheetContent className="w-full sm:w-[420px] sm:max-w-[420px] overflow-y-auto p-0 gap-0">
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto p-0 gap-0">
           <SheetHeader className="p-4">
             <SheetTitle>Edit Account</SheetTitle>
           </SheetHeader>

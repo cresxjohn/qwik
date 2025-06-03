@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Account, AccountType } from "@/shared/types";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface AccountFormProps {
   onCancel: () => void;
@@ -313,15 +314,13 @@ export function AccountForm({
           variant="outline"
           onClick={onCancel}
           className="flex-1"
+          disabled={loading}
         >
           Cancel
         </Button>
         <Button type="submit" disabled={loading} className="flex-1">
-          {loading
-            ? "Saving..."
-            : initialData
-            ? "Update Account"
-            : "Create Account"}
+          {loading && <Loader2 className="mr-2 h-4 animate-spin" />}
+          Save Changes
         </Button>
       </div>
     </form>

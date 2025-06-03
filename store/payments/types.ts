@@ -13,6 +13,7 @@ export interface PaymentsActions {
   setPayments: (payments: Payment[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  markPaymentCompleted: (id: string, completionDate?: string) => void;
 }
 
 export interface PaymentsStore extends PaymentsState, PaymentsActions {}

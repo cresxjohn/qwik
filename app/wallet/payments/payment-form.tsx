@@ -18,22 +18,63 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Attachment, EndDateType, Payment, PaymentType } from "@/shared/types";
-import { getFrequencyUnit } from "@/shared/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Attachment,
+  EndDateType,
+  Payment,
+  PaymentType,
+  PaymentConfirmationType,
+  RecurrencePattern,
+  FrequencyType,
+  MonthlyType,
+  Frequency,
+} from "@/shared/types";
+import {
+  calculateNextDueDateFromRecurrence,
+  formatRecurrencePattern,
+  legacyToRecurrencePattern,
+} from "@/shared/utils";
 import { usePaymentsStore } from "@/store/payments";
 import dayjs from "dayjs";
-import { CalendarIcon, ImageIcon, Loader2, Trash2, X } from "lucide-react";
+import {
+  CalendarIcon,
+  ImageIcon,
+  Loader2,
+  Trash2,
+  X,
+  Check,
+} from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { AccountSelect } from "./components/account-select";
+import { CategorySelect } from "./components/category-select";
+import { cn } from "@/lib/utils";
 
-const frequencies = [
+const frequencyTypes = [
+  { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
-  { value: "fortnightly", label: "Fortnightly" },
   { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
   { value: "yearly", label: "Yearly" },
+];
+
+const dayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+const weekNames = [
+  { value: 1, label: "First" },
+  { value: 2, label: "Second" },
+  { value: 3, label: "Third" },
+  { value: 4, label: "Fourth" },
+  { value: -1, label: "Last" },
 ];
 
 interface PaymentFormProps {
@@ -45,7 +86,6 @@ interface PaymentFormProps {
 interface FormData {
   name: string;
   amount: string;
-  frequency: string;
   account: string;
   toAccount: string;
   category: string;
@@ -56,6 +96,8 @@ interface FormData {
   endDate: Date | undefined;
   notes: string;
   attachments: Attachment[];
+  recurrence: RecurrencePattern;
+  confirmationType: PaymentConfirmationType;
 }
 
 export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
@@ -71,49 +113,42 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
   const [endDateType, setEndDateType] = useState<EndDateType>(() => {
     if (!initialData?.endDate) return "forever";
     if (initialData.endDate === "forever") return "forever";
-    // If it's a specific date, check if it's calculated from number of events
-    const startDate = dayjs(initialData.startDate);
-    const endDate = dayjs(initialData.endDate);
-    const frequency = initialData.frequency;
-
-    if (frequency) {
-      const diff = endDate.diff(startDate, getFrequencyUnit(frequency));
-
-      // If the difference is a whole number of frequency units, it's likely a number of events
-      if (Number.isInteger(diff)) {
-        return "number";
-      }
-    }
     return "date";
   });
 
   const [formData, setFormData] = useState<FormData>(() => {
-    let numberOfEvents = "";
-    if (initialData?.endDate && initialData.frequency) {
-      const startDate = dayjs(initialData.startDate);
-      const endDate = dayjs(initialData.endDate);
-      const diff = endDate.diff(
-        startDate,
-        getFrequencyUnit(initialData.frequency)
+    // Convert legacy frequency to new recurrence pattern if needed
+    let recurrence: RecurrencePattern = {
+      frequency: "monthly",
+      interval: 1,
+      monthlyType: "date",
+    };
+
+    if (initialData?.recurrence) {
+      recurrence = initialData.recurrence;
+    } else if (
+      initialData &&
+      "frequency" in initialData &&
+      initialData.frequency
+    ) {
+      // Handle legacy frequency conversion
+      recurrence = legacyToRecurrencePattern(
+        initialData.frequency as Frequency
       );
-      if (Number.isInteger(diff)) {
-        numberOfEvents = diff.toString();
-      }
     }
 
     // Convert string[] attachments to Attachment[]
     const attachments =
       initialData?.attachments?.map((url) => ({
         url,
-        key: url, // Using URL as key since we don't have the original key
-        thumbnailUrl: url, // Using same URL for thumbnail since we don't have the original
-        thumbnailKey: url, // Using same URL as key for thumbnail
+        key: url,
+        thumbnailUrl: url,
+        thumbnailKey: url,
       })) || [];
 
     return {
       name: initialData?.name ?? "",
       amount: initialData?.amount.toString() ?? "",
-      frequency: initialData?.frequency ?? "",
       account: initialData?.account ?? "",
       toAccount: initialData?.toAccount ?? "",
       category: initialData?.category ?? "",
@@ -122,17 +157,18 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
       startDate: initialData?.startDate
         ? new Date(initialData.startDate)
         : new Date(),
-      numberOfEvents,
+      numberOfEvents: "",
       endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
       notes: initialData?.notes ?? "",
       attachments,
+      recurrence,
+      confirmationType: initialData?.confirmationType || "manual",
     };
   });
 
   // Clean up attachments when component unmounts
   useEffect(() => {
     return () => {
-      // Clean up any object URLs when component unmounts
       formData.attachments.forEach((attachment) => {
         if (attachment.url.startsWith("blob:")) {
           URL.revokeObjectURL(attachment.url);
@@ -142,7 +178,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
   }, [formData.attachments]);
 
   const calculateEndDate = () => {
-    if (!formData.startDate || !formData.frequency) return undefined;
+    if (!formData.startDate || !isRecurring) return undefined;
 
     const startDate = dayjs(formData.startDate);
     let endDate: Date | undefined;
@@ -151,23 +187,19 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
       case "number": {
         if (!formData.numberOfEvents) return undefined;
         const numEvents = parseInt(formData.numberOfEvents);
-        switch (formData.frequency) {
-          case "weekly":
-            endDate = startDate.add(numEvents, "week").toDate();
-            break;
-          case "fortnightly":
-            endDate = startDate.add(numEvents * 2, "week").toDate();
-            break;
-          case "monthly":
-            endDate = startDate.add(numEvents, "month").toDate();
-            break;
-          case "quarterly":
-            endDate = startDate.add(numEvents * 3, "month").toDate();
-            break;
-          case "yearly":
-            endDate = startDate.add(numEvents, "year").toDate();
-            break;
+
+        // Calculate end date based on recurrence pattern
+        let current = startDate;
+        for (let i = 0; i < numEvents - 1; i++) {
+          current = dayjs(
+            calculateNextDueDateFromRecurrence(
+              current.toISOString(),
+              formData.recurrence,
+              current.toISOString()
+            )
+          );
         }
+        endDate = current.toDate();
         break;
       }
       case "date":
@@ -176,6 +208,13 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
     }
 
     return endDate;
+  };
+
+  const updateRecurrence = (updates: Partial<RecurrencePattern>) => {
+    setFormData((prev) => ({
+      ...prev,
+      recurrence: { ...prev.recurrence, ...updates },
+    }));
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,10 +294,6 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
       }
 
       if (isRecurring) {
-        if (!formData.frequency) {
-          throw new Error("Please select a frequency for recurring payments");
-        }
-
         if (endDateType === "number" && !formData.numberOfEvents) {
           throw new Error("Please specify the number of events");
         }
@@ -280,7 +315,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
         category: formData.category,
         tags: formData.tags,
         recurring: isRecurring,
-        frequency: formData.frequency as Payment["frequency"],
+        recurrence: isRecurring ? formData.recurrence : undefined,
         link: formData.link ?? undefined,
         startDate: formData.startDate
           ? dayjs(formData.startDate).toISOString()
@@ -311,6 +346,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
           formData.attachments.length > 0
             ? formData.attachments.map((attachment) => attachment.url)
             : undefined,
+        confirmationType: formData.confirmationType,
       };
 
       if (initialData) {
@@ -318,6 +354,8 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
       } else {
         addPayment(paymentData);
       }
+
+      onCancel();
     } catch (err) {
       console.error("Error saving payment:", err);
       setError(err instanceof Error ? err.message : "Failed to save payment");
@@ -347,6 +385,199 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
     }));
   };
 
+  const renderRecurrenceOptions = () => {
+    const { recurrence } = formData;
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Frequency</Label>
+            <Select
+              value={recurrence.frequency}
+              onValueChange={(value: FrequencyType) =>
+                updateRecurrence({ frequency: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {frequencyTypes.map((freq) => (
+                  <SelectItem key={freq.value} value={freq.value}>
+                    {freq.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              How often this payment repeats
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Every</Label>
+            <Input
+              type="number"
+              min="1"
+              value={recurrence.interval}
+              onChange={(e) =>
+                updateRecurrence({ interval: parseInt(e.target.value) || 1 })
+              }
+              placeholder="1"
+            />
+            <p className="text-sm text-muted-foreground">
+              Repeat every X intervals
+            </p>
+          </div>
+        </div>
+
+        {recurrence.frequency === "weekly" && (
+          <div className="space-y-2">
+            <Label>Repeat on</Label>
+            <div className="grid grid-cols-7 gap-2">
+              {dayNames.map((day, index) => (
+                <div key={day} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`day-${index}`}
+                    checked={recurrence.weeklyDays?.includes(index) || false}
+                    onCheckedChange={(checked) => {
+                      const currentDays = recurrence.weeklyDays || [];
+                      if (checked) {
+                        updateRecurrence({
+                          weeklyDays: [...currentDays, index].sort(),
+                        });
+                      } else {
+                        updateRecurrence({
+                          weeklyDays: currentDays.filter((d) => d !== index),
+                        });
+                      }
+                    }}
+                  />
+                  <Label htmlFor={`day-${index}`} className="text-sm">
+                    {day.slice(0, 3)}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Select specific days of the week
+            </p>
+          </div>
+        )}
+
+        {recurrence.frequency === "monthly" && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Monthly repeat type</Label>
+              <Select
+                value={recurrence.monthlyType || "date"}
+                onValueChange={(value: MonthlyType) =>
+                  updateRecurrence({ monthlyType: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">By date of month</SelectItem>
+                  <SelectItem value="day">By day of week</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Choose how monthly recurrence works
+              </p>
+            </div>
+
+            {recurrence.monthlyType === "date" && (
+              <div className="space-y-2">
+                <Label>Day of month</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={
+                    recurrence.monthlyDay ||
+                    (formData.startDate ? formData.startDate.getDate() : 1)
+                  }
+                  onChange={(e) =>
+                    updateRecurrence({
+                      monthlyDay: parseInt(e.target.value) || 1,
+                    })
+                  }
+                />
+                <p className="text-sm text-muted-foreground">
+                  Day of the month (1-31)
+                </p>
+              </div>
+            )}
+
+            {recurrence.monthlyType === "day" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Week</Label>
+                  <Select
+                    value={recurrence.monthlyWeek?.toString() || "1"}
+                    onValueChange={(value) =>
+                      updateRecurrence({ monthlyWeek: parseInt(value) })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {weekNames.map((week) => (
+                        <SelectItem
+                          key={week.value}
+                          value={week.value.toString()}
+                        >
+                          {week.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Which week of the month
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Day</Label>
+                  <Select
+                    value={recurrence.monthlyWeekDay?.toString() || "1"}
+                    onValueChange={(value) =>
+                      updateRecurrence({ monthlyWeekDay: parseInt(value) })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dayNames.map((day, index) => (
+                        <SelectItem key={index} value={index.toString()}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Day of the week
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="p-3 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            <strong>Summary:</strong> {formatRecurrencePattern(recurrence)}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit} className="relative flex flex-col">
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
@@ -364,6 +595,9 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
                   <TabsTrigger value="transfer">Transfer</TabsTrigger>
                 </TabsList>
               </Tabs>
+              <p className="text-sm text-muted-foreground">
+                Select the type of transaction
+              </p>
             </div>
           )}
 
@@ -379,7 +613,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               required
             />
             <p className="text-sm text-muted-foreground">
-              Give your payment a descriptive name to easily identify it
+              A descriptive name to identify this payment
             </p>
           </div>
 
@@ -397,7 +631,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               required
             />
             <p className="text-sm text-muted-foreground">
-              Enter the payment amount in your local currency
+              Payment amount in your local currency
             </p>
           </div>
 
@@ -405,58 +639,52 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
             <Label htmlFor="account">
               {paymentType === "transfer" ? "From Account" : "Account"}
             </Label>
-            <Input
-              id="account"
+            <AccountSelect
               placeholder={
                 paymentType === "transfer"
                   ? "Source account"
                   : "e.g., Credit Card, Bank Account"
               }
               value={formData.account}
-              onChange={(e) =>
-                setFormData({ ...formData, account: e.target.value })
+              onValueChange={(value: string) =>
+                setFormData({ ...formData, account: value })
               }
-              required
             />
             <p className="text-sm text-muted-foreground">
               {paymentType === "transfer"
-                ? "Specify the source account for the transfer"
-                : "Specify which account or payment method will be used"}
+                ? "Account to transfer from"
+                : "Account or payment method to use"}
             </p>
           </div>
 
           {paymentType === "transfer" && (
             <div className="space-y-2">
               <Label htmlFor="toAccount">To Account</Label>
-              <Input
-                id="toAccount"
+              <AccountSelect
                 placeholder="Destination account"
                 value={formData.toAccount}
-                onChange={(e) =>
-                  setFormData({ ...formData, toAccount: e.target.value })
+                onValueChange={(value: string) =>
+                  setFormData({ ...formData, toAccount: value })
                 }
-                required
               />
               <p className="text-sm text-muted-foreground">
-                Specify the destination account for the transfer
+                Account to transfer to
               </p>
             </div>
           )}
 
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Input
-              id="category"
+            <CategorySelect
               value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
+              onValueChange={(value: string) =>
+                setFormData({ ...formData, category: value })
               }
-              placeholder="Enter category"
-              required
+              paymentType={paymentType}
+              placeholder="Select or type category..."
             />
             <p className="text-sm text-muted-foreground">
-              Categorize your payment (e.g., Entertainment, Utilities,
-              Insurance) to help with budgeting and organization
+              Group similar payments for easier budgeting
             </p>
           </div>
 
@@ -488,8 +716,98 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               </PopoverContent>
             </Popover>
             <p className="text-sm text-muted-foreground">
-              When does this payment start? For recurring payments, this will be
-              your first payment date
+              When this payment begins
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Payment Confirmation</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+              <button
+                type="button"
+                className={cn(
+                  "relative text-left rounded-lg border p-4 hover:bg-accent hover:text-accent-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 h-full",
+                  formData.confirmationType === "manual"
+                    ? "border-primary bg-primary/5"
+                    : "border-input"
+                )}
+                onClick={() =>
+                  setFormData({ ...formData, confirmationType: "manual" })
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setFormData({ ...formData, confirmationType: "manual" });
+                  }
+                }}
+                aria-pressed={formData.confirmationType === "manual"}
+                aria-describedby="manual-confirmation-desc"
+              >
+                <div className="flex items-start justify-between space-x-3">
+                  <div className="flex-1">
+                    <h3 className="font-medium">Manual Confirmation</h3>
+                    <p
+                      id="manual-confirmation-desc"
+                      className="text-sm text-muted-foreground mt-1"
+                    >
+                      You&apos;ll manually mark payments as completed when
+                      processed
+                    </p>
+                  </div>
+                  {formData.confirmationType === "manual" && (
+                    <div
+                      className="text-primary flex-shrink-0"
+                      aria-hidden="true"
+                    >
+                      <Check className="h-5 w-5" />
+                    </div>
+                  )}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={cn(
+                  "relative text-left rounded-lg border p-4 hover:bg-accent hover:text-accent-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 h-full",
+                  formData.confirmationType === "automatic"
+                    ? "border-primary bg-primary/5"
+                    : "border-input"
+                )}
+                onClick={() =>
+                  setFormData({ ...formData, confirmationType: "automatic" })
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setFormData({ ...formData, confirmationType: "automatic" });
+                  }
+                }}
+                aria-pressed={formData.confirmationType === "automatic"}
+                aria-describedby="automatic-confirmation-desc"
+              >
+                <div className="flex items-start justify-between space-x-3">
+                  <div className="flex-1">
+                    <h3 className="font-medium">Automatic Confirmation</h3>
+                    <p
+                      id="automatic-confirmation-desc"
+                      className="text-sm text-muted-foreground mt-1"
+                    >
+                      System automatically marks payments as completed
+                    </p>
+                  </div>
+                  {formData.confirmationType === "automatic" && (
+                    <div
+                      className="text-primary flex-shrink-0"
+                      aria-hidden="true"
+                    >
+                      <Check className="h-5 w-5" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Choose how payment completion is tracked
             </p>
           </div>
 
@@ -501,12 +819,11 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               onValueChange={(value) => {
                 setIsRecurring(value === "recurring");
                 if (value === "one-time") {
-                  setFormData({
-                    ...formData,
-                    frequency: "",
+                  setFormData((prev) => ({
+                    ...prev,
                     numberOfEvents: "",
                     endDate: undefined,
-                  });
+                  }));
                   setEndDateType("forever");
                 }
               }}
@@ -517,33 +834,19 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               </TabsList>
               <TabsContent value="recurring" className="space-y-6">
                 <div className="space-y-6">
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="frequency">Frequency</Label>
-                    <Select
-                      value={formData.frequency}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, frequency: value })
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {frequencies.map((freq) => (
-                          <SelectItem key={freq.value} value={freq.value}>
-                            {freq.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-4 mt-4">
+                    <Label>Recurrence Pattern</Label>
                     <p className="text-sm text-muted-foreground">
-                      How often will this payment occur?
+                      Configure how often this payment repeats
                     </p>
+                    {renderRecurrenceOptions()}
                   </div>
 
                   <div className="space-y-4">
                     <Label>End Date Options</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Choose when this recurring payment should stop
+                    </p>
                     <Tabs
                       defaultValue={endDateType}
                       className="w-full"
@@ -553,9 +856,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
                     >
                       <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="forever">Forever</TabsTrigger>
-                        <TabsTrigger value="number">
-                          Number of Events
-                        </TabsTrigger>
+                        <TabsTrigger value="number">No. of Events</TabsTrigger>
                         <TabsTrigger value="date">Specific Date</TabsTrigger>
                       </TabsList>
                       <TabsContent value="number" className="space-y-2">
@@ -574,8 +875,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
                           required
                         />
                         <p className="text-sm text-muted-foreground">
-                          How many times should this payment occur? The end date
-                          will be calculated automatically
+                          How many times this payment will occur
                         </p>
                       </TabsContent>
                       <TabsContent value="date" className="space-y-2">
@@ -607,7 +907,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
                           </PopoverContent>
                         </Popover>
                         <p className="text-sm text-muted-foreground">
-                          When should this recurring payment end?
+                          When this recurring payment ends
                         </p>
                       </TabsContent>
                     </Tabs>
@@ -629,7 +929,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               }
             />
             <p className="text-sm text-muted-foreground">
-              Add a link to the payment website or portal for quick access
+              Link to payment website or account portal
             </p>
           </div>
 
@@ -645,7 +945,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               className="min-h-[100px]"
             />
             <p className="text-sm text-muted-foreground">
-              Add any relevant information or reminders about this payment
+              Additional details or reminders
             </p>
           </div>
 
@@ -676,8 +976,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Add custom tags to group related payments or add specific labels
-              (e.g., #urgent, #shared, #work)
+              Add tags to organize and filter payments
             </p>
           </div>
 
@@ -755,9 +1054,12 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
                 )}
               </label>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Upload receipts, bills, or related documents
+            </p>
           </div>
         </div>
-      </div>{" "}
+      </div>
       <div className="sticky bottom-0 left-0 right-0 bg-background border-t p-4">
         {error && (
           <div className="text-sm text-red-500 text-center mb-4">{error}</div>
@@ -776,6 +1078,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
             variant="outline"
             onClick={onCancel}
             className="w-full md:w-auto order-last md:order-first"
+            disabled={loading}
           >
             Cancel
           </Button>

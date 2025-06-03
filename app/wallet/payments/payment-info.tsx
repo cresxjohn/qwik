@@ -19,27 +19,49 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Payment } from "@/shared/types";
+import { Payment, Frequency } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
+import {
+  formatRecurrencePattern,
+  legacyToRecurrencePattern,
+} from "@/shared/utils";
 import dayjs from "dayjs";
-import { CalendarIcon, CreditCard, Link as LinkIcon, Tag } from "lucide-react";
+import {
+  CalendarIcon,
+  CreditCard,
+  Edit,
+  ExternalLink,
+  FileText,
+  Hash,
+  Link as LinkIcon,
+  Repeat,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 
 interface PaymentInfoProps {
   payment: Payment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: (payment: Payment) => void;
-  onDelete: (id: string) => void;
+  onDelete: (payment: Payment) => void;
 }
 
-function getOrdinalSuffix(n: number): string {
-  const j = n % 10;
-  const k = n % 100;
-  if (j === 1 && k !== 11) return "st";
-  if (j === 2 && k !== 12) return "nd";
-  if (j === 3 && k !== 13) return "rd";
-  return "th";
+function getOrdinalSuffix(num: number): string {
+  const j = num % 10,
+    k = num % 100;
+  if (j === 1 && k !== 11) {
+    return num + "st";
+  }
+  if (j === 2 && k !== 12) {
+    return num + "nd";
+  }
+  if (j === 3 && k !== 13) {
+    return num + "rd";
+  }
+  return num + "th";
 }
 
 export function PaymentInfo({
@@ -51,11 +73,49 @@ export function PaymentInfo({
 }: PaymentInfoProps) {
   if (!payment) return null;
 
+  const formatRecurrenceDisplay = () => {
+    if (!payment.recurring) return "One-time Payment";
+
+    if (payment.recurrence) {
+      return formatRecurrencePattern(payment.recurrence);
+    } else if ("frequency" in payment && payment.frequency) {
+      // Handle legacy frequency
+      const legacyRecurrence = legacyToRecurrencePattern(
+        payment.frequency as Frequency
+      );
+      return formatRecurrencePattern(legacyRecurrence);
+    }
+
+    return "Recurring Payment";
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-screen md:max-w-[600px] flex flex-col p-0 gap-0">
         <SheetHeader className="p-4">
-          <SheetTitle className="text-2xl font-bold">{payment.name}</SheetTitle>
+          <div className="flex items-start justify-between">
+            <div>
+              <SheetTitle className="text-2xl font-bold">
+                {payment.name}
+              </SheetTitle>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(payment)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(payment)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -95,24 +155,52 @@ export function PaymentInfo({
               </div>
 
               <div className="flex items-start gap-3">
+                <Hash className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Confirmation Type
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">
+                      {payment.confirmationType === "manual"
+                        ? "Manual Confirmation"
+                        : "Automatic Confirmation"}
+                    </p>
+                    <Badge
+                      variant={
+                        payment.confirmationType === "manual"
+                          ? "secondary"
+                          : "outline"
+                      }
+                      className={
+                        payment.confirmationType === "manual"
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-green-100 text-green-800"
+                      }
+                    >
+                      {payment.confirmationType === "manual"
+                        ? "Manual"
+                        : "Auto"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {payment.confirmationType === "manual"
+                      ? "You'll manually mark payments as completed"
+                      : "System automatically marks payments as completed"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
                 <CalendarIcon className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
                   <p className="text-sm text-muted-foreground">
                     Payment Schedule
                   </p>
                   <div className="space-y-1">
-                    <p className="font-medium">
-                      {payment.recurring
-                        ? "Recurring Payment"
-                        : "One-time Payment"}
-                    </p>
+                    <p className="font-medium">{formatRecurrenceDisplay()}</p>
                     {payment.recurring && (
                       <>
-                        <p className="text-sm">
-                          Frequency:{" "}
-                          {payment.frequency?.charAt(0).toUpperCase()}
-                          {payment.frequency?.slice(1)}
-                        </p>
                         <p className="text-sm">
                           Start Date:{" "}
                           {dayjs(payment.startDate).format("MMM D, YYYY")}
@@ -147,7 +235,7 @@ export function PaymentInfo({
                       {getOrdinalSuffix(
                         parseInt(dayjs(payment.paymentDate).format("D"))
                       )}{" "}
-                      of each {payment.frequency || "month"}
+                      of each period
                     </p>
                   </div>
                 </div>
@@ -265,7 +353,7 @@ export function PaymentInfo({
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => {
-                      onDelete(payment.id);
+                      onDelete(payment);
                       onOpenChange(false);
                     }}
                     className="bg-red-600 hover:bg-red-700"

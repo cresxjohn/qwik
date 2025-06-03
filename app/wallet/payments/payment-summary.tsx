@@ -1,10 +1,11 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Payment } from "@/shared/types";
+import { Payment, Frequency } from "@/shared/types";
 import { formatCurrency } from "@/shared/utils";
-import { CalendarClock, CreditCard, PiggyBank, Repeat } from "lucide-react";
+import { legacyToRecurrencePattern } from "@/shared/utils";
 import dayjs from "dayjs";
+import { Calendar, DollarSign, Repeat, TrendingUp } from "lucide-react";
 
 interface PaymentSummaryProps {
   payments: Payment[];
@@ -41,58 +42,82 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
       dayjs(a.nextDueDate).isBefore(dayjs(b.nextDueDate)) ? -1 : 1
     )[0];
 
-  // Calculate monthly recurring total
+  // Calculate monthly recurring total with new recurrence pattern support
   const monthlyRecurring = payments
     .filter((payment) => payment.recurring)
     .reduce((sum, payment) => {
       let amount = payment.amount;
-      switch (payment.frequency) {
-        case "weekly":
-          amount *= 4;
-          break;
-        case "fortnightly":
-          amount *= 2;
-          break;
-        case "quarterly":
-          amount /= 3;
-          break;
-        case "yearly":
-          amount /= 12;
-          break;
+
+      if (payment.recurrence) {
+        const { frequency, interval } = payment.recurrence;
+        switch (frequency) {
+          case "daily":
+            amount *= 30 / interval; // Approximate monthly equivalent
+            break;
+          case "weekly":
+            amount *= 4 / interval; // 4 weeks per month
+            break;
+          case "monthly":
+            amount /= interval; // Divide by interval for monthly equivalent
+            break;
+          case "yearly":
+            amount /= 12 * interval; // Yearly to monthly
+            break;
+        }
+      } else if ("frequency" in payment && payment.frequency) {
+        // Handle legacy frequency
+        const legacyFreq = payment.frequency as Frequency;
+        switch (legacyFreq) {
+          case "weekly":
+            amount *= 4;
+            break;
+          case "fortnightly":
+            amount *= 2;
+            break;
+          case "quarterly":
+            amount /= 3;
+            break;
+          case "yearly":
+            amount /= 12;
+            break;
+          // monthly stays the same
+        }
       }
+
       return sum + amount;
     }, 0);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
               <div className="p-2 bg-primary/10 rounded-full">
-                <CreditCard className="h-6 w-6 text-primary" />
+                <TrendingUp className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-medium leading-none">
-                  Upcoming Payments
+                  Total Upcoming
                 </p>
                 <p className="text-2xl font-bold mt-2">
                   {formatCurrency(totalUpcoming)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {upcomingPayments.length} payments scheduled
+                  {upcomingPayments.length} payments
                 </p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
-              <div className="p-2 bg-primary/10 rounded-full">
-                <PiggyBank className="h-6 w-6 text-primary" />
+              <div className="p-2 bg-orange-500/10 rounded-full">
+                <Calendar className="h-6 w-6 text-orange-500" />
               </div>
               <div>
                 <p className="text-sm font-medium leading-none">
@@ -102,19 +127,20 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
                   {formatCurrency(totalDueThisMonth)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {dueThisMonth.length} payments remaining
+                  {dueThisMonth.length} payments
                 </p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
             <div className="flex items-center space-x-4">
-              <div className="p-2 bg-primary/10 rounded-full">
-                <CalendarClock className="h-6 w-6 text-primary" />
+              <div className="p-2 bg-green-500/10 rounded-full">
+                <DollarSign className="h-6 w-6 text-green-500" />
               </div>
               <div>
                 <p className="text-sm font-medium leading-none">Next Payment</p>
@@ -129,15 +155,19 @@ export function PaymentSummary({ payments }: PaymentSummaryProps) {
                     </p>
                   </>
                 ) : (
-                  <p className="text-lg font-medium mt-2">
-                    No upcoming payments
-                  </p>
+                  <>
+                    <p className="text-2xl font-bold mt-2">-</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      No upcoming payments
+                    </p>
+                  </>
                 )}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardContent className="mt-0">
           <div className="flex items-center justify-between space-x-4">
