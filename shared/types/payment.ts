@@ -1,6 +1,6 @@
 export type FrequencyType = "daily" | "weekly" | "monthly" | "yearly";
 
-export type MonthlyType = "date" | "day"; // by date of month vs by day of week
+export type MonthlyType = "day" | "week"; // by day of month vs by day of week
 
 export interface RecurrencePattern {
   frequency: FrequencyType;

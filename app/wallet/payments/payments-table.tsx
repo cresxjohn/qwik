@@ -52,6 +52,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -114,6 +121,8 @@ const formatColumnName = (columnId: string) => {
       return "End Date";
     case "confirmationType":
       return "Confirmation";
+    case "paymentType":
+      return "Type";
     default:
       // Convert camelCase to normal case with first letter capitalized
       return columnId
@@ -289,13 +298,48 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
         size: 120,
       },
       {
+        accessorKey: "paymentType",
+        header: ({ column }) => (
+          <SortableHeader column={column}>Type</SortableHeader>
+        ),
+        cell: ({ row }) => {
+          const paymentType = row.getValue("paymentType") as string;
+          const isIncome = paymentType === "income";
+          return (
+            <Badge
+              variant="outline"
+              className={
+                isIncome
+                  ? "bg-green-100 text-green-800 border-green-300"
+                  : "bg-orange-100 text-orange-800 border-orange-300"
+              }
+            >
+              {isIncome ? "Income" : "Expense"}
+            </Badge>
+          );
+        },
+        enableHiding: true,
+        size: 100,
+      },
+      {
         accessorKey: "amount",
         header: ({ column }) => (
           <SortableHeader column={column}>Amount</SortableHeader>
         ),
         cell: ({ row }) => {
           const amount = row.getValue("amount") as number;
-          return <span className="font-medium">{formatCurrency(amount)}</span>;
+          const paymentType = row.original.paymentType;
+          const isIncome = paymentType === "income";
+
+          return (
+            <span
+              className={`font-medium ${
+                isIncome ? "text-green-600" : "text-orange-600"
+              }`}
+            >
+              {formatCurrency(amount)}
+            </span>
+          );
         },
         enableHiding: true,
         size: 100,
@@ -568,6 +612,10 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
               // Capitalize confirmation type for CSV
               return value === "manual" ? "Manual" : "Automatic";
             }
+            if (column.id === "paymentType") {
+              // Capitalize payment type for CSV
+              return value === "income" ? "Income" : "Expense";
+            }
             return value;
           })
           // Escape any fields containing commas with quotes
@@ -615,6 +663,26 @@ export function PaymentsTable({ payments, onEdit }: PaymentsTableProps) {
               }
               className="max-w-md"
             />
+            <Select
+              value={
+                (table.getColumn("paymentType")?.getFilterValue() as string) ??
+                "all"
+              }
+              onValueChange={(value) => {
+                table
+                  .getColumn("paymentType")
+                  ?.setFilterValue(value === "all" ? undefined : value);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+                <SelectItem value="expense">Expense</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <DropdownMenu>

@@ -121,7 +121,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
     let recurrence: RecurrencePattern = {
       frequency: "monthly",
       interval: 1,
-      monthlyType: "date",
+      monthlyType: "day",
     };
 
     if (initialData?.recurrence) {
@@ -471,7 +471,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
             <div className="space-y-2">
               <Label>Monthly repeat type</Label>
               <Select
-                value={recurrence.monthlyType || "date"}
+                value={recurrence.monthlyType || "day"}
                 onValueChange={(value: MonthlyType) =>
                   updateRecurrence({ monthlyType: value })
                 }
@@ -480,8 +480,8 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="date">By date of month</SelectItem>
-                  <SelectItem value="day">By day of week</SelectItem>
+                  <SelectItem value="day">By day of month</SelectItem>
+                  <SelectItem value="week">By day of week</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
@@ -489,7 +489,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               </p>
             </div>
 
-            {recurrence.monthlyType === "date" && (
+            {recurrence.monthlyType === "day" && (
               <div className="space-y-2">
                 <Label>Day of month</Label>
                 <Input
@@ -512,7 +512,7 @@ export function PaymentForm({ onCancel, initialData }: PaymentFormProps) {
               </div>
             )}
 
-            {recurrence.monthlyType === "day" && (
+            {recurrence.monthlyType === "week" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Week</Label>

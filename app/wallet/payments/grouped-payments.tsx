@@ -206,6 +206,17 @@ export function GroupedPayments({
                     <div className="space-y-1">
                       <p className="font-medium">{payment.name}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full border ${
+                            payment.paymentType === "income"
+                              ? "bg-green-100 text-green-800 border-green-300"
+                              : "bg-orange-100 text-orange-800 border-orange-300"
+                          }`}
+                        >
+                          {payment.paymentType === "income"
+                            ? "Income"
+                            : "Expense"}
+                        </span>
                         {groupBy !== "dueDate" && (
                           <span>
                             Due {dayjs(payment.nextDueDate).format("MMM D")}
@@ -239,7 +250,13 @@ export function GroupedPayments({
                         </span>
                       </div>
                     </div>
-                    <p className="font-mono">
+                    <p
+                      className={`font-mono font-medium ${
+                        payment.paymentType === "income"
+                          ? "text-green-600"
+                          : "text-orange-600"
+                      }`}
+                    >
                       {formatCurrency(payment.amount)}
                     </p>
                   </div>

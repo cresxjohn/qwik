@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,12 +11,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { TransactionsTable } from "./transactions-table";
-import { mockTransactions } from "@/shared/mock";
-
-// Generate transactions once at build time
-const transactions = mockTransactions;
+import { useTransactionsStore } from "@/store/transactions";
 
 export default function Page() {
+  const { items: transactions } = useTransactionsStore();
+
   return (
     <SidebarInset>
       <header className="sticky top-0 z-10 bg-background sm:rounded-4xl flex h-16 shrink-0 items-center gap-2">

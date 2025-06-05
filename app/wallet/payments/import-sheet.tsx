@@ -275,12 +275,12 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
       // Validate monthlyType
       if (
         row.monthlyType &&
-        !["date", "day"].includes(row.monthlyType.toLowerCase())
+        !["day", "week"].includes(row.monthlyType.toLowerCase())
       ) {
         errors.push(
           `Row ${
             index + 1
-          }: monthlyType must be "date" or "day" (case-insensitive). Got: "${
+          }: monthlyType must be "day" or "week" (case-insensitive). Got: "${
             row.monthlyType
           }"`
         );
@@ -419,21 +419,21 @@ export function ImportSheet({ open, onOpenChange }: ImportSheetProps) {
 
         // Validate monthly-specific combinations
         if (row.frequency?.toLowerCase() === "monthly") {
-          if (row.monthlyType?.toLowerCase() === "date" && !row.monthlyDay) {
+          if (row.monthlyType?.toLowerCase() === "day" && !row.monthlyDay) {
             errors.push(
               `Row ${
                 index + 1
-              }: monthlyDay is required when monthlyType is "date"`
+              }: monthlyDay is required when monthlyType is "day"`
             );
           }
           if (
-            row.monthlyType?.toLowerCase() === "day" &&
+            row.monthlyType?.toLowerCase() === "week" &&
             (!row.monthlyWeek || !row.monthlyWeekDay)
           ) {
             errors.push(
               `Row ${
                 index + 1
-              }: monthlyWeek and monthlyWeekDay are required when monthlyType is "day"`
+              }: monthlyWeek and monthlyWeekDay are required when monthlyType is "week"`
             );
           }
         }

@@ -56,7 +56,7 @@ export function calculateNextDueDateFromRecurrence(
     }
 
     case "monthly": {
-      if (recurrence.monthlyType === "date" && recurrence.monthlyDay) {
+      if (recurrence.monthlyType === "day" && recurrence.monthlyDay) {
         // By specific date of month
         let nextDate = start
           .add(recurrence.interval, "month")
@@ -139,7 +139,7 @@ export function createMonthlyByDateRecurrence(
   return {
     frequency: "monthly",
     interval,
-    monthlyType: "date",
+    monthlyType: "day",
     monthlyDay: day,
   };
 }
@@ -177,13 +177,13 @@ export function legacyToRecurrencePattern(
     case "fortnightly":
       return createWeeklyRecurrence(2);
     case "monthly":
-      return { frequency: "monthly", interval: 1, monthlyType: "date" };
+      return { frequency: "monthly", interval: 1, monthlyType: "day" };
     case "quarterly":
-      return { frequency: "monthly", interval: 3, monthlyType: "date" };
+      return { frequency: "monthly", interval: 3, monthlyType: "day" };
     case "yearly":
       return createYearlyRecurrence(1);
     default:
-      return { frequency: "monthly", interval: 1, monthlyType: "date" };
+      return { frequency: "monthly", interval: 1, monthlyType: "day" };
   }
 }
 
@@ -212,7 +212,7 @@ export function formatRecurrencePattern(recurrence: RecurrencePattern): string {
 
   if (
     frequency === "monthly" &&
-    recurrence.monthlyType === "date" &&
+    recurrence.monthlyType === "day" &&
     recurrence.monthlyDay
   ) {
     const ordinal = getOrdinalSuffix(recurrence.monthlyDay);
